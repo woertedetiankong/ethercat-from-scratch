@@ -1,0 +1,65 @@
+{
+ "duration": 456.329,
+ "chapters": [
+  {
+   "t": 0.0,
+   "title": "还没出门就到家了",
+   "title_en": "Home before it has left"
+  },
+  {
+   "t": 23.81,
+   "title": "帧是一串流动的比特",
+   "title_en": "A frame is a stream"
+  },
+  {
+   "t": 67.36,
+   "title": "办公室交换机的做法",
+   "title_en": "How an office switch does it"
+  },
+  {
+   "t": 97.35,
+   "title": "EtherCAT：从不存下整帧",
+   "title_en": "EtherCAT: never stored"
+  },
+  {
+   "t": 141.77,
+   "title": "整帧什么时候回到主站？",
+   "title_en": "When is the whole frame back?"
+  },
+  {
+   "t": 179.15,
+   "title": "一帧铺满整条总线",
+   "title_en": "One frame across the whole line"
+  },
+  {
+   "t": 214.55,
+   "title": "每个从站都有自己的座位",
+   "title_en": "Every slave has its seats"
+  },
+  {
+   "t": 251.01,
+   "title": "一帧真实的帧，一站一站看",
+   "title_en": "One real frame, slave by slave"
+  },
+  {
+   "t": 302.46,
+   "title": "校验和在最后",
+   "title_en": "The checksum comes last"
+  },
+  {
+   "t": 363.69,
+   "title": "为什么这很重要",
+   "title_en": "Why it matters"
+  },
+  {
+   "t": 394.74,
+   "title": "本集要点",
+   "title_en": "Recap"
+  },
+  {
+   "t": 423.72,
+   "title": "你来算",
+   "title_en": "Your turn"
+  }
+ ]
+}

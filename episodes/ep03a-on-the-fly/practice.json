@@ -1,0 +1,46 @@
+{
+ "about": "课件 practice page, read by slides.mjs. q / a / why = [中文, English]; scene = the video scene that asks it; run = the command it quotes (data/runs.sh); reasoned = true when only arithmetic or reasoning backs it.",
+ "questions": [
+  {
+   "scene": "tail",
+   "q": ["我们的 88 字节周期帧，帧头 1485 纳秒回到主站。最后一个字节什么时候到？", "Our 88-byte cyclic frame's head is back after 1485 ns. When has its last byte arrived?"],
+   "a": ["9485 纳秒，约 9.5 微秒。线上一共 100 字节（8 前导码 + 88 + 4 校验和），每字节 80 纳秒，帧尾比帧头晚 8000 纳秒。", "After 9485 ns, about 9.5 µs. 100 bytes go on the wire (8 preamble + 88 + 4 checksum) at 80 ns each, so the tail is 8000 ns behind the head."],
+   "why": ["运行的 pcap 记录了每一帧发出和整帧收齐的时刻：每个 88 字节帧都是 9485 纳秒（data.py 逐帧检查）。芯片和网线延迟是模拟的，每字节 80 纳秒是 100 Mbit/s 的标准。", "The run's pcap records when each frame left and when it was completely back: 9485 ns for every 88-byte frame (data.py checks each one). Chip and cable delays are simulated; 80 ns per byte is 100 Mbit/s."],
+   "run": "episodes/ep03a-on-the-fly/data/runs.sh"
+  },
+  {
+   "scene": "stretch",
+   "q": ["帧头回到主站的那一刻（1485 纳秒），主站已经发出去多少字节？它们在哪里？", "At the moment the head comes home (1485 ns), how many bytes has the master sent, and where are they?"],
+   "a": ["约 18 字节（1485 ÷ 80 ≈ 18.6）。它们铺满了整个环：每个从站里都正有几个字节，其余 82 字节还在主站里排队。", "About 18 (1485 ÷ 80 ≈ 18.6). They are spread around the whole ring, a few bytes inside every slave; the other 82 are still waiting in the master."],
+   "why": ["第 k 个字节在 k × 80 纳秒时出门，此后沿着和帧头一样的路径走。", "Byte k leaves at k × 80 ns and then follows the same path as the head."],
+   "reasoned": true
+  },
+  {
+   "scene": "hops",
+   "q": ["一帧真实的周期帧经过 J1 之后，数据区里哪些字节变了？", "After a real cyclic frame passes J1, which bytes of its data area have changed?"],
+   "a": ["只有 J1 自己的回答座位（数据区第 28–33 字节）：它写入了实际位置。J1 的命令座位只是被读取，别人的座位没动。", "Only J1's own reply seats (bytes 28–33 of the data area), where it wrote its actual position. Its command seats were only read, and nobody else's seats changed."],
+   "why": ["运行里把同一帧在每个从站之后都复制了一份；data.py 检查每一站改动的字节都只落在它自己的座位里。", "The run copies the same frame after every slave; data.py checks that the bytes each slave changes all fall in its own seats."],
+   "run": "episodes/ep03a-on-the-fly/data/runs.sh"
+  },
+  {
+   "scene": "crc",
+   "q": ["一个从站收到一帧，末尾的校验和是错的。它能把这一帧拦下来吗？它会怎么做？", "A slave receives a frame whose checksum at the end is wrong. Can it stop the frame? What does it do?"],
+   "a": ["拦不下来：校验和到的时候，帧的前面早就发出去了。它让发出去的校验和也变成错的、加一个标记，丢弃这一帧本来要在它身上生效的改动，并记一次错误。主站网卡最后把坏帧扔掉。", "No: by the time the checksum arrives, the front of the frame has already gone on. It makes the outgoing checksum wrong too and adds a marker, drops the changes this frame would have made in it, and counts an error. The master's network card throws the frame away."],
+   "why": ["ESC 数据手册第 I 部分第 14 节（错误计数器）。模拟总线没有比特错误，所以这一题没有运行数据。", "ESC datasheet Section I, chapter 14 (error counters). Our simulated line has no bit errors, so no run backs this one."],
+   "reasoned": true
+  },
+  {
+   "scene": "yourturn",
+   "q": ["还是这条总线，帧在线上有 200 字节。帧头 1485 纳秒回来，整帧什么时候到齐？", "Same line, a frame of 200 bytes on the wire. The head is back after 1485 ns. When has the whole frame arrived?"],
+   "a": ["1485 + 200 × 80 = 17485 纳秒，约 17.5 微秒。", "1485 + 200 × 80 = 17,485 ns, about 17.5 µs."],
+   "why": ["帧尾比帧头晚 字节数 × 80 纳秒。", "The tail is (bytes × 80 ns) behind the head."],
+   "reasoned": true
+  },
+  {
+   "q": ["如果每个从站都像交换机那样先存整帧再转发，我们这一帧每过一个从站要多花多少时间？", "If every slave stored the whole frame before passing it on, like a switch, how much would each slave add for our frame?"],
+   "a": ["至少 8 微秒（整帧的线上时间），而边走边处理只要约 0.3 微秒，大约多 26 倍。", "At least 8 µs (the frame's whole time on the wire), against about 0.3 µs on the fly: roughly 26 times more."],
+   "why": ["8000 ÷ 305 ≈ 26。存储转发必须等最后一个字节到齐。", "8000 ÷ 305 ≈ 26. Store-and-forward has to wait for the last byte."],
+   "reasoned": true
+  }
+ ]
+}

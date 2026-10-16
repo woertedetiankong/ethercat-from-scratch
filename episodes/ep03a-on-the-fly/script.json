@@ -1,0 +1,83 @@
+[
+ {"id":"intro","title":"Home before it has left","zh":"还没出门就到家了","lines":[
+  ["Last episode ended on a puzzle.","上一集留了一个谜题。"],
+  ["Our frame's first bit is back at the master after 1.5 µs.","我们这一帧的第一个比特，1.5 微秒就回到了主站。"],
+  ["But sending the whole frame takes 8 µs.","可整帧发出去要 8 微秒。"],
+  ["How can the head be home before the tail has even left?","帧头怎么能在帧尾出门之前就到家？"]
+ ]},
+ {"id":"wire","title":"A frame is a stream","zh":"帧是一串流动的比特","lines":[
+  ["On the cable, a frame is not a parcel. It is a stream of bits, one after another.","在网线上，帧不是一个包裹，而是一串接一串的比特。"],
+  ["At 100 Mbit/s, one bit takes 10 ns. One byte takes 80 ns.","100 Mbit/s 下，一个比特 10 纳秒，一个字节 80 纳秒。"],
+  ["Our cyclic frame is 88 bytes. With its preamble and checksum, 100 bytes go on the wire.","我们的周期帧 88 字节，加上前导码和校验和，线上一共 100 字节。"],
+  ["100 bytes × 80 ns = 8 µs, from the first bit to the last.","100 字节 × 80 纳秒 = 8 微秒，从第一个比特到最后一个。"],
+  ["At 5 ns per metre, 8 µs of signal is 1.6 km long. Our whole line is 4 m.","按每米 5 纳秒算，8 微秒的信号有 1.6 公里长。我们整条总线才 4 米。"]
+ ]},
+ {"id":"switch","title":"How an office switch does it","zh":"办公室交换机的做法","lines":[
+  ["A typical office switch stores each frame before passing it on.","普通的办公室交换机，会先把整帧存下来，再往下传。"],
+  ["It waits for the last byte, checks the checksum, then starts sending.","它等最后一个字节到齐，核对校验和，然后才开始发送。"],
+  ["So every hop costs at least the whole frame time: 8 µs for our frame.","所以每过一站，至少要花整帧的时间：我们这一帧就是 8 微秒。"],
+  ["Like a post office that unpacks every parcel before sending it to the next town.","就像一个邮局，每个包裹都要拆开验过，才寄往下一个城市。"]
+ ]},
+ {"id":"fly","title":"EtherCAT: never stored","zh":"EtherCAT：从不存下整帧","lines":[
+  ["An EtherCAT slave chip does not store the frame.","EtherCAT 的从站芯片不存帧。"],
+  ["Its datasheet says it plainly: data is read and written as the bits pass.","它的数据手册说得很直白：比特经过时，数据就被读写。"],
+  ["The bits go in at port 0 and start leaving at port 1 about 305 ns later.","比特从口 0 进来，大约 305 纳秒后就开始从口 1 出去。"],
+  ["305 ns is about 4 bytes. That is all the chip holds at any moment.","305 纳秒大约是 4 个字节，芯片任何时刻手里就只有这么多。"],
+  ["Like a train that never stops: at each station, a worker takes off the letters for this town and puts its own letters on, while the train rolls through.","就像一列不停站的火车：每到一站，站上的人趁车开过，取下寄给本站的信，再塞上本站要寄的信。"]
+ ]},
+ {"id":"tail","title":"When is the whole frame back?","zh":"整帧什么时候回到主站？","lines":[
+  ["So, our 88-byte frame on our line.","那么，我们的 88 字节帧，在我们的总线上。"],
+  ["The head is back after 1485 ns. When has the last byte arrived?","帧头 1485 纳秒回来。最后一个字节什么时候到？","","pause"],
+  ["The tail follows the head through every chip, 8 µs behind it.","帧尾跟着帧头穿过每一颗芯片，始终落后 8 微秒。"],
+  ["1485 + 8000 = 9485 ns. The whole frame is back after about 9.5 µs.","1485 + 8000 = 9485 纳秒：整帧大约 9.5 微秒回到主站。"],
+  ["The chip delays are simulated. The 80 ns per byte is the 100 Mbit/s standard.","芯片延迟是模拟的；每字节 80 纳秒是 100 Mbit/s 的标准。"]
+ ]},
+ {"id":"stretch","title":"One frame across the whole line","zh":"一帧铺满整条总线","lines":[
+  ["Freeze time at 1485 ns, the moment the head comes home.","把时间定格在 1485 纳秒，帧头回家的那一刻。"],
+  ["The master has sent only about 18 bytes so far. The rest is still waiting to go out.","主站这时才发出去大约 18 个字节，其余的还在排队等着出门。"],
+  ["Those 18 bytes are spread over the whole ring: every slave has a few bytes inside it.","这 18 个字节铺满了整个环：每个从站里都正有几个字节。"],
+  ["The master sends on one pair and receives on the other, at the same time. That is why this works.","主站一对线发、一对线收，同时进行。这一切能成立，靠的就是这一点。"]
+ ]},
+ {"id":"seats","title":"Every slave has its seats","zh":"每个从站都有自己的座位","lines":[
+  ["Inside the frame, the data area has a seat for each slave.","帧里的数据区，给每个从站都留了座位。"],
+  ["SOEM printed where they are: 12 bytes going out, 28 bytes coming back.","SOEM 打印出了它们的位置：12 字节往外送，28 字节往回带。"],
+  ["J1 and J2 each get 6 bytes of commands, and 6 bytes for their reply.","J1、J2 各有 6 字节的命令，再各有 6 字节写回答。"],
+  ["The analog card has no commands, just 16 bytes for its readings.","采集卡没有命令，只有 16 字节放它的读数。"],
+  ["How the seats are addressed is Episode 3b. Here, just watch them fill.","座位怎么寻址，是第 3 集下篇的内容。这里只看它们怎么被填上。"]
+ ]},
+ {"id":"hops","title":"One real frame, slave by slave","zh":"一帧真实的帧，一站一站看","lines":[
+  ["Here is one real frame from the run, copied after every slave.","这是运行中真实的一帧，每过一个从站就拍一张快照。"],
+  ["Leaving the master: new targets for J1 and J2. The reply seats still hold last cycle's values.","离开主站时：带着 J1、J2 的新目标；回答座位里还是上个周期的值。"],
+  ["After slave 1: the card has written its newest readings into its seats.","过了从站 1：采集卡把最新读数写进了自己的座位。"],
+  ["After J1: J1 has taken its target, and written its actual position in its own seat.","过了 J1：J1 取走了目标，把实际位置写进了自己的座位。"],
+  ["After J2: the same, in J2's seats.","过了 J2：J2 的座位也一样。"],
+  ["Back at the master: every seat is fresh. One frame, one trip, every slave served.","回到主站：每个座位都是新的。一帧，一趟，每个从站都服务到了。"],
+  ["Nothing waited for anything. Each slave did its part while the frame was passing.","没有谁在等谁。每个从站都是在帧经过的那一刻干完自己的事。"]
+ ]},
+ {"id":"crc","title":"The checksum comes last","zh":"校验和在最后","lines":[
+  ["One catch: every Ethernet frame ends with a checksum, proof that the bytes arrived intact.","有个难题：每个以太网帧末尾都有校验和，用来证明字节完好无损。"],
+  ["A switch checks it before sending anything. The chip can't: by then, the front of the frame left long ago.","交换机先核对它，再往外发。芯片做不到：校验和到的时候，帧的前面早就走远了。"],
+  ["So the chip works out a new checksum as the bytes pass, and puts it at the end.","所以芯片边转发边算一个新的校验和，放在帧的末尾。"],
+  ["If the incoming checksum was wrong, it makes the outgoing one wrong too, and adds a marker.","如果收到的校验和是错的，它就让发出去的也错，再加一个标记。"],
+  ["It drops the changes this frame would have made in it, and counts an error.","它丢弃这一帧本来要在它身上生效的改动，并记一次错误。"],
+  ["The master's network card throws the bad frame away. That cycle has no answer; the next one starts fresh.","主站的网卡把坏帧扔掉。这个周期没有回答，下一个周期重新开始。"],
+  ["This comes from the ESC datasheet. Our simulated line has no bit errors.","这部分来自 ESC 数据手册。我们模拟的总线不会出现比特错误。"]
+ ]},
+ {"id":"scale","title":"Why it matters","zh":"为什么这很重要","lines":[
+  ["Each slave adds about 0.3 µs, whatever the frame's length.","每个从站只添大约 0.3 微秒，跟帧多长无关。"],
+  ["Storing our frame would cost 8 µs per slave: about 26 times more.","如果要存下整帧，每个从站要 8 微秒：大约多 26 倍。"],
+  ["A full-size Ethernet frame takes about 122 µs to store. On the fly, still about 0.3 µs.","一个最大的以太网帧，存下来要约 122 微秒；边走边处理，还是约 0.3 微秒。"],
+  ["So one frame can serve a long line of slaves, every cycle, with time to spare.","所以一帧能在每个周期服务一长串从站，时间还绰绰有余。"]
+ ]},
+ {"id":"recap","title":"Recap","zh":"本集要点","lines":[
+  ["One: a frame is a stream. Ours is 8 µs long on the wire, far longer than the line.","一、帧是一串流：我们这一帧在线上长 8 微秒，比整条总线长得多。"],
+  ["Two: each slave reads and writes its seats as the bits pass, holding only a few bytes.","二、每个从站在比特经过时读写自己的座位，手里只留几个字节。"],
+  ["Three: the checksum can't be checked first, so a bad frame is marked and dropped at the end.","三、校验和没法先核对，所以坏帧在末尾被标记，最后被丢弃。"]
+ ]},
+ {"id":"yourturn","title":"Your turn","zh":"你来算","lines":[
+  ["Same line. This time the frame is 200 bytes on the wire.","还是这条总线，这次帧在线上有 200 字节。"],
+  ["The head is still back after 1485 ns. When has the whole frame arrived?","帧头仍然 1485 纳秒回来。整帧什么时候到齐？","","pause"],
+  ["200 × 80 ns = 16,000 ns. 1485 + 16,000 = 17,485 ns, about 17.5 µs.","200 × 80 纳秒 = 16000 纳秒。1485 + 16000 = 17485 纳秒，约 17.5 微秒。"],
+  ["Next: what is inside the frame. Datagrams, logical addresses, and the working counter.","下一集：帧里装了什么。数据报、逻辑地址，还有工作计数器。"]
+ ]}
+]

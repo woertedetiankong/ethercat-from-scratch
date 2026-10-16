@@ -1,0 +1,20 @@
+ok   SOEM map: 12 bytes out, 28 bytes back
+ok   J1 and J2: 6 bytes of commands, 6 bytes of reply each
+ok   card: no commands, 16 bytes of readings
+ok   every cyclic frame (1000) is 88 bytes, head back after 1485 ns
+ok   100 bytes on the wire = 8 µs
+ok   pcap: every 88-byte frame is completely back after 9485 ns (1485 + 8000)
+ok   frame: LRW copied leaving the master, after each slave, and back
+ok   after slave 1: only its own reply seats changed ([14, 16])
+ok   after slave 2: only its own reply seats changed ([30])
+ok   after slave 3: only its own reply seats changed ([36])
+ok   nothing changes on the way back
+ok   command seats (targets) unchanged all the way round
+ok   counter 0 → 1 → 4 → 7 (shown on screen only; Episode 3b)
+ok   at 1485 ns about 18 bytes have left the master
+ok   worked out: 8 µs / 305 ns ≈ 26; full-size frame 1526 B on the wire ≈ 122 µs
+master_tx 0 J1 target 70711 AI [3142, 3510, 1765, 4750] J1 actual 71154 J2 actual 71154 wkc 0
+pu 1 J1 target 70711 AI [3142, 3507, 1766, 4750] J1 actual 71154 J2 actual 71154 wkc 1
+pu 2 J1 target 70711 AI [3142, 3507, 1766, 4750] J1 actual 70932 J2 actual 71154 wkc 4
+pu 3 J1 target 70711 AI [3142, 3507, 1766, 4750] J1 actual 70932 J2 actual 70932 wkc 7
+master_rx 0 J1 target 70711 AI [3142, 3507, 1766, 4750] J1 actual 70932 J2 actual 70932 wkc 7

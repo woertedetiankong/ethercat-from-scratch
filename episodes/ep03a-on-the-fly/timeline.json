@@ -1,0 +1,455 @@
+{
+ "total": 456.329,
+ "scenes": [
+  {
+   "id": "intro",
+   "title": "Home before it has left",
+   "zh": "还没出门就到家了",
+   "start": 0.0,
+   "dur": 23.812,
+   "beats": [
+    {
+     "text": "Last episode ended on a puzzle.",
+     "zh": "上一集留了一个谜题。",
+     "start": 0.9,
+     "dur": 3.8
+    },
+    {
+     "text": "Our frame's first bit is back at the master after 1.5 µs.",
+     "zh": "我们这一帧的第一个比特，1.5 微秒就回到了主站。",
+     "start": 5.3,
+     "dur": 5.817
+    },
+    {
+     "text": "But sending the whole frame takes 8 µs.",
+     "zh": "可整帧发出去要 8 微秒。",
+     "start": 11.717,
+     "dur": 4.078
+    },
+    {
+     "text": "How can the head be home before the tail has even left?",
+     "zh": "帧头怎么能在帧尾出门之前就到家？",
+     "start": 16.395,
+     "dur": 5.817
+    }
+   ]
+  },
+  {
+   "id": "wire",
+   "title": "A frame is a stream",
+   "zh": "帧是一串流动的比特",
+   "start": 23.812,
+   "dur": 43.552,
+   "beats": [
+    {
+     "text": "On the cable, a frame is not a parcel. It is a stream of bits, one after another.",
+     "zh": "在网线上，帧不是一个包裹，而是一串接一串的比特。",
+     "start": 0.9,
+     "dur": 8.426
+    },
+    {
+     "text": "At 100 Mbit/s, one bit takes 10 ns. One byte takes 80 ns.",
+     "zh": "100 Mbit/s 下，一个比特 10 纳秒，一个字节 80 纳秒。",
+     "start": 9.926,
+     "dur": 6.252
+    },
+    {
+     "text": "Our cyclic frame is 88 bytes. With its preamble and checksum, 100 bytes go on the wire.",
+     "zh": "我们的周期帧 88 字节，加上前导码和校验和，线上一共 100 字节。",
+     "start": 16.778,
+     "dur": 7.991
+    },
+    {
+     "text": "100 bytes × 80 ns = 8 µs, from the first bit to the last.",
+     "zh": "100 字节 × 80 纳秒 = 8 微秒，从第一个比特到最后一个。",
+     "start": 25.369,
+     "dur": 7.122
+    },
+    {
+     "text": "At 5 ns per metre, 8 µs of signal is 1.6 km long. Our whole line is 4 m.",
+     "zh": "按每米 5 纳秒算，8 微秒的信号有 1.6 公里长。我们整条总线才 4 米。",
+     "start": 33.091,
+     "dur": 8.861
+    }
+   ]
+  },
+  {
+   "id": "switch",
+   "title": "How an office switch does it",
+   "zh": "办公室交换机的做法",
+   "start": 67.364,
+   "dur": 29.982,
+   "beats": [
+    {
+     "text": "A typical office switch stores each frame before passing it on.",
+     "zh": "普通的办公室交换机，会先把整帧存下来，再往下传。",
+     "start": 0.9,
+     "dur": 5.6
+    },
+    {
+     "text": "It waits for the last byte, checks the checksum, then starts sending.",
+     "zh": "它等最后一个字节到齐，核对校验和，然后才开始发送。",
+     "start": 7.1,
+     "dur": 5.838
+    },
+    {
+     "text": "So every hop costs at least the whole frame time: 8 µs for our frame.",
+     "zh": "所以每过一站，至少要花整帧的时间：我们这一帧就是 8 微秒。",
+     "start": 13.538,
+     "dur": 7.122
+    },
+    {
+     "text": "Like a post office that unpacks every parcel before sending it to the next town.",
+     "zh": "就像一个邮局，每个包裹都要拆开验过，才寄往下一个城市。",
+     "start": 21.26,
+     "dur": 7.122
+    }
+   ]
+  },
+  {
+   "id": "fly",
+   "title": "EtherCAT: never stored",
+   "zh": "EtherCAT：从不存下整帧",
+   "start": 97.346,
+   "dur": 44.422,
+   "beats": [
+    {
+     "text": "An EtherCAT slave chip does not store the frame.",
+     "zh": "EtherCAT 的从站芯片不存帧。",
+     "start": 0.9,
+     "dur": 4.513
+    },
+    {
+     "text": "Its datasheet says it plainly: data is read and written as the bits pass.",
+     "zh": "它的数据手册说得很直白：比特经过时，数据就被读写。",
+     "start": 6.013,
+     "dur": 6.687
+    },
+    {
+     "text": "The bits go in at port 0 and start leaving at port 1 about 305 ns later.",
+     "zh": "比特从口 0 进来，大约 305 纳秒后就开始从口 1 出去。",
+     "start": 13.3,
+     "dur": 7.991
+    },
+    {
+     "text": "305 ns is about 4 bytes. That is all the chip holds at any moment.",
+     "zh": "305 纳秒大约是 4 个字节，芯片任何时刻手里就只有这么多。",
+     "start": 21.891,
+     "dur": 7.122
+    },
+    {
+     "text": "Like a train that never stops: at each station, a worker takes off the letters for this town and puts its own letters on, while the train rolls through.",
+     "zh": "就像一列不停站的火车：每到一站，站上的人趁车开过，取下寄给本站的信，再塞上本站要寄的信。",
+     "start": 29.613,
+     "dur": 13.209
+    }
+   ]
+  },
+  {
+   "id": "tail",
+   "title": "When is the whole frame back?",
+   "zh": "整帧什么时候回到主站？",
+   "start": 141.768,
+   "dur": 37.384,
+   "beats": [
+    {
+     "text": "So, our 88-byte frame on our line.",
+     "zh": "那么，我们的 88 字节帧，在我们的总线上。",
+     "start": 0.9,
+     "dur": 4.171
+    },
+    {
+     "text": "The head is back after 1485 ns. When has the last byte arrived?",
+     "zh": "帧头 1485 纳秒回来。最后一个字节什么时候到？",
+     "start": 5.671,
+     "dur": 8.252
+    },
+    {
+     "text": "The tail follows the head through every chip, 8 µs behind it.",
+     "zh": "帧尾跟着帧头穿过每一颗芯片，始终落后 8 微秒。",
+     "start": 14.523,
+     "dur": 5.817
+    },
+    {
+     "text": "1485 + 8000 = 9485 ns. The whole frame is back after about 9.5 µs.",
+     "zh": "1485 + 8000 = 9485 纳秒：整帧大约 9.5 微秒回到主站。",
+     "start": 20.94,
+     "dur": 7.122
+    },
+    {
+     "text": "The chip delays are simulated. The 80 ns per byte is the 100 Mbit/s standard.",
+     "zh": "芯片延迟是模拟的；每字节 80 纳秒是 100 Mbit/s 的标准。",
+     "start": 28.662,
+     "dur": 7.122
+    }
+   ]
+  },
+  {
+   "id": "stretch",
+   "title": "One frame across the whole line",
+   "zh": "一帧铺满整条总线",
+   "start": 179.152,
+   "dur": 35.396,
+   "beats": [
+    {
+     "text": "Freeze time at 1485 ns, the moment the head comes home.",
+     "zh": "把时间定格在 1485 纳秒，帧头回家的那一刻。",
+     "start": 0.9,
+     "dur": 5.383
+    },
+    {
+     "text": "The master has sent only about 18 bytes so far. The rest is still waiting to go out.",
+     "zh": "主站这时才发出去大约 18 个字节，其余的还在排队等着出门。",
+     "start": 6.883,
+     "dur": 8.426
+    },
+    {
+     "text": "Those 18 bytes are spread over the whole ring: every slave has a few bytes inside it.",
+     "zh": "这 18 个字节铺满了整个环：每个从站里都正有几个字节。",
+     "start": 15.909,
+     "dur": 7.991
+    },
+    {
+     "text": "The master sends on one pair and receives on the other, at the same time. That is why this works.",
+     "zh": "主站一对线发、一对线收，同时进行。这一切能成立，靠的就是这一点。",
+     "start": 24.5,
+     "dur": 9.296
+    }
+   ]
+  },
+  {
+   "id": "seats",
+   "title": "Every slave has its seats",
+   "zh": "每个从站都有自己的座位",
+   "start": 214.548,
+   "dur": 36.46,
+   "beats": [
+    {
+     "text": "Inside the frame, the data area has a seat for each slave.",
+     "zh": "帧里的数据区，给每个从站都留了座位。",
+     "start": 0.9,
+     "dur": 5.817
+    },
+    {
+     "text": "SOEM printed where they are: 12 bytes going out, 28 bytes coming back.",
+     "zh": "SOEM 打印出了它们的位置：12 字节往外送，28 字节往回带。",
+     "start": 7.317,
+     "dur": 6.252
+    },
+    {
+     "text": "J1 and J2 each get 6 bytes of commands, and 6 bytes for their reply.",
+     "zh": "J1、J2 各有 6 字节的命令，再各有 6 字节写回答。",
+     "start": 14.169,
+     "dur": 7.122
+    },
+    {
+     "text": "The analog card has no commands, just 16 bytes for its readings.",
+     "zh": "采集卡没有命令，只有 16 字节放它的读数。",
+     "start": 21.891,
+     "dur": 5.817
+    },
+    {
+     "text": "How the seats are addressed is Episode 3b. Here, just watch them fill.",
+     "zh": "座位怎么寻址，是第 3 集下篇的内容。这里只看它们怎么被填上。",
+     "start": 28.308,
+     "dur": 6.552
+    }
+   ]
+  },
+  {
+   "id": "hops",
+   "title": "One real frame, slave by slave",
+   "zh": "一帧真实的帧，一站一站看",
+   "start": 251.008,
+   "dur": 51.45,
+   "beats": [
+    {
+     "text": "Here is one real frame from the run, copied after every slave.",
+     "zh": "这是运行中真实的一帧，每过一个从站就拍一张快照。",
+     "start": 0.9,
+     "dur": 5.838
+    },
+    {
+     "text": "Leaving the master: new targets for J1 and J2. The reply seats still hold last cycle's values.",
+     "zh": "离开主站时：带着 J1、J2 的新目标；回答座位里还是上个周期的值。",
+     "start": 7.338,
+     "dur": 7.991
+    },
+    {
+     "text": "After slave 1: the card has written its newest readings into its seats.",
+     "zh": "过了从站 1：采集卡把最新读数写进了自己的座位。",
+     "start": 15.929,
+     "dur": 6.252
+    },
+    {
+     "text": "After J1: J1 has taken its target, and written its actual position in its own seat.",
+     "zh": "过了 J1：J1 取走了目标，把实际位置写进了自己的座位。",
+     "start": 22.781,
+     "dur": 7.557
+    },
+    {
+     "text": "After J2: the same, in J2's seats.",
+     "zh": "过了 J2：J2 的座位也一样。",
+     "start": 30.938,
+     "dur": 3.8
+    },
+    {
+     "text": "Back at the master: every seat is fresh. One frame, one trip, every slave served.",
+     "zh": "回到主站：每个座位都是新的。一帧，一趟，每个从站都服务到了。",
+     "start": 35.338,
+     "dur": 7.122
+    },
+    {
+     "text": "Nothing waited for anything. Each slave did its part while the frame was passing.",
+     "zh": "没有谁在等谁。每个从站都是在帧经过的那一刻干完自己的事。",
+     "start": 43.06,
+     "dur": 6.79
+    }
+   ]
+  },
+  {
+   "id": "crc",
+   "title": "The checksum comes last",
+   "zh": "校验和在最后",
+   "start": 302.458,
+   "dur": 61.232,
+   "beats": [
+    {
+     "text": "One catch: every Ethernet frame ends with a checksum, proof that the bytes arrived intact.",
+     "zh": "有个难题：每个以太网帧末尾都有校验和，用来证明字节完好无损。",
+     "start": 0.9,
+     "dur": 7.122
+    },
+    {
+     "text": "A switch checks it before sending anything. The chip can't: by then, the front of the frame left long ago.",
+     "zh": "交换机先核对它，再往外发。芯片做不到：校验和到的时候，帧的前面早就走远了。",
+     "start": 8.622,
+     "dur": 9.296
+    },
+    {
+     "text": "So the chip works out a new checksum as the bytes pass, and puts it at the end.",
+     "zh": "所以芯片边转发边算一个新的校验和，放在帧的末尾。",
+     "start": 18.518,
+     "dur": 8.426
+    },
+    {
+     "text": "If the incoming checksum was wrong, it makes the outgoing one wrong too, and adds a marker.",
+     "zh": "如果收到的校验和是错的，它就让发出去的也错，再加一个标记。",
+     "start": 27.544,
+     "dur": 7.991
+    },
+    {
+     "text": "It drops the changes this frame would have made in it, and counts an error.",
+     "zh": "它丢弃这一帧本来要在它身上生效的改动，并记一次错误。",
+     "start": 36.135,
+     "dur": 7.122
+    },
+    {
+     "text": "The master's network card throws the bad frame away. That cycle has no answer; the next one starts fresh.",
+     "zh": "主站的网卡把坏帧扔掉。这个周期没有回答，下一个周期重新开始。",
+     "start": 43.857,
+     "dur": 8.861
+    },
+    {
+     "text": "This comes from the ESC datasheet. Our simulated line has no bit errors.",
+     "zh": "这部分来自 ESC 数据手册。我们模拟的总线不会出现比特错误。",
+     "start": 53.318,
+     "dur": 6.314
+    }
+   ]
+  },
+  {
+   "id": "scale",
+   "title": "Why it matters",
+   "zh": "为什么这很重要",
+   "start": 363.69,
+   "dur": 31.048,
+   "beats": [
+    {
+     "text": "Each slave adds about 0.3 µs, whatever the frame's length.",
+     "zh": "每个从站只添大约 0.3 微秒，跟帧多长无关。",
+     "start": 0.9,
+     "dur": 4.948
+    },
+    {
+     "text": "Storing our frame would cost 8 µs per slave: about 26 times more.",
+     "zh": "如果要存下整帧，每个从站要 8 微秒：大约多 26 倍。",
+     "start": 6.448,
+     "dur": 6.252
+    },
+    {
+     "text": "A full-size Ethernet frame takes about 122 µs to store. On the fly, still about 0.3 µs.",
+     "zh": "一个最大的以太网帧，存下来要约 122 微秒；边走边处理，还是约 0.3 微秒。",
+     "start": 13.3,
+     "dur": 7.991
+    },
+    {
+     "text": "So one frame can serve a long line of slaves, every cycle, with time to spare.",
+     "zh": "所以一帧能在每个周期服务一长串从站，时间还绰绰有余。",
+     "start": 21.891,
+     "dur": 7.557
+    }
+   ]
+  },
+  {
+   "id": "recap",
+   "title": "Recap",
+   "zh": "本集要点",
+   "start": 394.738,
+   "dur": 28.978,
+   "beats": [
+    {
+     "text": "One: a frame is a stream. Ours is 8 µs long on the wire, far longer than the line.",
+     "zh": "一、帧是一串流：我们这一帧在线上长 8 微秒，比整条总线长得多。",
+     "start": 0.9,
+     "dur": 8.861
+    },
+    {
+     "text": "Two: each slave reads and writes its seats as the bits pass, holding only a few bytes.",
+     "zh": "二、每个从站在比特经过时读写自己的座位，手里只留几个字节。",
+     "start": 10.361,
+     "dur": 7.991
+    },
+    {
+     "text": "Three: the checksum can't be checked first, so a bad frame is marked and dropped at the end.",
+     "zh": "三、校验和没法先核对，所以坏帧在末尾被标记，最后被丢弃。",
+     "start": 18.952,
+     "dur": 8.426
+    }
+   ]
+  },
+  {
+   "id": "yourturn",
+   "title": "Your turn",
+   "zh": "你来算",
+   "start": 423.716,
+   "dur": 32.613,
+   "beats": [
+    {
+     "text": "Same line. This time the frame is 200 bytes on the wire.",
+     "zh": "还是这条总线，这次帧在线上有 200 字节。",
+     "start": 0.9,
+     "dur": 5.817
+    },
+    {
+     "text": "The head is still back after 1485 ns. When has the whole frame arrived?",
+     "zh": "帧头仍然 1485 纳秒回来。整帧什么时候到齐？",
+     "start": 7.317,
+     "dur": 8.687
+    },
+    {
+     "text": "200 × 80 ns = 16,000 ns. 1485 + 16,000 = 17,485 ns, about 17.5 µs.",
+     "zh": "200 × 80 纳秒 = 16000 纳秒。1485 + 16000 = 17485 纳秒，约 17.5 微秒。",
+     "start": 16.604,
+     "dur": 7.557
+    },
+    {
+     "text": "Next: what is inside the frame. Datagrams, logical addresses, and the working counter.",
+     "zh": "下一集：帧里装了什么。数据报、逻辑地址，还有工作计数器。",
+     "start": 24.761,
+     "dur": 6.252
+    }
+   ]
+  }
+ ]
+}

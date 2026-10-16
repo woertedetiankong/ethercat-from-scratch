@@ -1,0 +1,84 @@
+"""Episode 3a's numbers, from vwire/runs.sh (real SOEM running cyclic process data on vwire:chain3, act-on-frame mode).
+
+    python3 data.py            # re-runs vwire/runs.sh, checks every stated property, writes ep03a_data.js
+
+Uses data/onfly.jsonl (every cyclic frame copied after each slave) and data/onfly.pcap (send time and the time the
+whole frame is back, ns). The chip and cable delays are simulated; 80 ns per byte is 100 Mbit/s.
+"""
+import json, os, re, struct, subprocess, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+VW = os.path.join(HERE, '..', '..', 'vwire')
+DATA = os.path.join(VW, 'data')
+
+subprocess.run([os.path.join(VW, 'runs.sh')], check=True, stdout=subprocess.DEVNULL)
+txt = open(os.path.join(DATA, 'onfly.txt')).read()
+ev = [json.loads(l) for l in open(os.path.join(DATA, 'onfly.jsonl'))]
+
+ok = True
+def need(cond, what):
+    global ok
+    print(('ok   ' if cond else 'FAIL ') + what)
+    ok &= bool(cond)
+
+# SOEM's process-data map, as printed by the cycle program
+m = re.search(r'(\d+) output \+ (\d+) input bytes', txt)
+nout, nin = int(m.group(1)), int(m.group(2))
+seats = {}
+for s, name, o, ob, i, ib in re.findall(r'slave (\d) (.+?)\s+outputs at iomap\+(-?\d+)\s*\((\d+) B\)\s+inputs at iomap\+(\d+)\s*\((\d+) B\)', txt):
+    seats[int(s)] = {'name': name, 'out': [int(o), int(ob)], 'in': [int(i), int(ib)]}
+need(nout == 12 and nin == 28, 'SOEM map: 12 bytes out, 28 bytes back')
+need(seats[2]['out'][1] == 6 and seats[2]['in'][1] == 6 and seats[3]['out'][1] == 6 and seats[3]['in'][1] == 6, 'J1 and J2: 6 bytes of commands, 6 bytes of reply each')
+need(seats[1]['out'][1] == 0 and seats[1]['in'][1] == 16, 'card: no commands, 16 bytes of readings')
+
+# cyclic frames: size and head time
+t_run = next(e['t_us'] for e in ev if e['ev'] == 'mark' and e['what'].startswith('run'))
+t_stop = next(e['t_us'] for e in ev if e['ev'] == 'mark' and e['what'] == 'stop')
+cyc = [e for e in ev if e['ev'] == 'frame' and t_run < e['t0_us'] < t_stop]
+need(len(cyc) > 500 and {e['bytes'] for e in cyc} == {88} and {e['rtt_ns'] for e in cyc} == {1485}, f'every cyclic frame ({len(cyc)}) is 88 bytes, head back after 1485 ns')
+wire_bytes = 8 + 88 + 4
+need(wire_bytes * 80 == 8000, '100 bytes on the wire = 8 µs')
+
+# tail: the pcap records each frame twice, when sent and when completely back
+d = open(os.path.join(DATA, 'onfly.pcap'), 'rb').read()
+recs, o = [], 24
+while o < len(d):
+    s, ns, il, _ = struct.unpack_from('<IIII', d, o); recs.append((s * 10**9 + ns, il)); o += 16 + il
+pairs = [(recs[k][1], recs[k + 1][0] - recs[k][0]) for k in range(0, len(recs) - 1, 2)]
+full = {dt for n, dt in pairs if n == 88}
+need(full == {9485}, 'pcap: every 88-byte frame is completely back after 9485 ns (1485 + 8000)')
+
+# one frame, copied after every slave: the LRW datagram's data area (iomap bytes 0..39)
+f = cyc[750]['f']  # 0.75 s in: the joints' slow sine is steep here, so the change is easy to see
+hops = [e for e in ev if e['ev'] == 'hop' and e['f'] == f]
+def lrw(h):
+    b = bytes.fromhex(h)[2:]
+    n = struct.unpack_from('<H', b, 6)[0] & 0x7ff
+    return b[0], b[10:10 + n], struct.unpack_from('<H', b, 10 + n)[0]
+snaps = [lrw(e['ecat']) for e in hops]
+need([e['at'] for e in hops] == ['master_tx', 'pu', 'pu', 'pu', 'master_rx'] and all(c == 0x0C for c, _, _ in snaps), 'frame: LRW copied leaving the master, after each slave, and back')
+own = {1: set(range(12, 28)), 2: set(range(28, 34)), 3: set(range(34, 40))}
+for k in (1, 2, 3):
+    diff = {i for i in range(40) if snaps[k][1][i] != snaps[k - 1][1][i]}
+    need(diff and diff <= own[k], f'after slave {k}: only its own reply seats changed ({sorted(diff)})')
+need(snaps[4][1] == snaps[3][1], 'nothing changes on the way back')
+need(snaps[0][1][0:12] == snaps[4][1][0:12], 'command seats (targets) unchanged all the way round')
+wkc = [w for _, _, w in snaps]
+need(wkc == [0, 1, 4, 7, 7], 'counter 0 → 1 → 4 → 7 (shown on screen only; Episode 3b)')
+
+def fields(data):
+    j = lambda off: list(struct.unpack_from('<Hi', data, off))
+    return {'j1_out': j(0), 'j2_out': j(6), 'ai': list(struct.unpack_from('<8h', data, 12)), 'j1_in': j(28), 'j2_in': j(34)}
+
+P = {}
+for e in ev:
+    if e['ev'] == 'path' and e['f'] == f: P[e['s']] = {k: e[k] for k in ('in0_ns', 'pu_ns', 'in1_ns', 'out0_ns')}
+need(round(1485 / 80) == 19 and int(1485 / 80) == 18, 'at 1485 ns about 18 bytes have left the master')
+need(round(8000 / 305) == 26 and round((1518 + 8) * 80 / 1000) == 122, 'worked out: 8 µs / 305 ns ≈ 26; full-size frame 1526 B on the wire ≈ 122 µs')
+
+D = {'frame': f, 'bytes': 88, 'wire_bytes': wire_bytes, 'rtt': 1485, 'tail': 9485, 'nout': nout, 'nin': nin, 'seats': seats,
+     'snaps': [{'at': e['at'], 's': e['s'], 'hex': s[1].hex(), 'wkc': s[2], **fields(s[1])} for e, s in zip(hops, snaps)],
+     'path': P, 'map_lines': [l for l in txt.split('\n') if 'output +' in l or 'outputs at' in l]}
+open(os.path.join(HERE, 'ep03a_data.js'), 'w').write('// generated by data.py from vwire/runs.sh (vwire:chain3, act on frame); do not edit\nconst D = ' + json.dumps(D, ensure_ascii=False) + ';\n')
+if not ok: sys.exit('a stated property failed: fix the script or the run')
+for s in D['snaps']: print(s['at'], s['s'], 'J1 target', s['j1_out'][1], 'AI', s['ai'][:4], 'J1 actual', s['j1_in'][1], 'J2 actual', s['j2_in'][1], 'wkc', s['wkc'])
