@@ -5,6 +5,8 @@
 A video course (videos + slides) on how EtherCAT communicates and keeps time. No hardware needed:
 the master is real SOEM code, the slaves are simulated EtherCAT slave controllers (ESCs) in `vwire/`.
 
+**Watch the videos:** download them from [Releases](https://github.com/woertedetiankong/ethercat-from-scratch/releases) (silent, with Chinese and English subtitles). Each episode's slides are in `site/content/epNN/`.
+
 ## Layout
 
 | Path | What it is |

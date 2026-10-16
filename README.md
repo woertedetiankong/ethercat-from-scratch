@@ -5,6 +5,8 @@
 一门视频课（视频 + 课件），讲清 EtherCAT 是怎么通信、怎么同步的。不需要任何硬件：
 主站是真正的 SOEM 代码，从站是 `vwire/` 里模拟的 EtherCAT 从站芯片（ESC）。
 
+**看视频：** 在 [Releases](https://github.com/woertedetiankong/ethercat-from-scratch/releases) 下载（无旁白，中英双语字幕）。每集课件在 `site/content/epNN/`。
+
 ## 目录
 
 | 路径 | 是什么 |
