@@ -1,0 +1,92 @@
+[
+ {"id":"intro","title":"The 1 ms problem","zh":"1 毫秒的问题","lines":[
+  ["Two robot joints get the same command at the same time.","两个机器人关节，在同一时刻收到同样的命令。"],
+  ["Will they really move at the same moment?","它们真的会在同一瞬间动起来吗？"],
+  ["This course is about EtherCAT, the bus inside many robot joints.","这门课讲 EtherCAT，很多机器人关节里用的就是这条总线。"],
+  ["Before how it works, one question: why does timing matter so much?","讲它怎么工作之前，先回答一个问题：为什么时间这么要紧？"]
+ ]},
+ {"id":"line","title":"Our line","zh":"我们的总线","lines":[
+  ["Every episode uses the same small line.","每一集都用同一条小总线。"],
+  ["One master, then three slaves on one cable.","一个主站，后面一根网线串着三个从站。"],
+  ["Master: the controller that sends commands. Slave: a device that obeys and reports.","主站：发命令的控制器。从站：听命令、回数据的设备。"],
+  ["Slave 1 is an analog input card. Slaves 2 and 3 are joint drives, J1 and J2.","从站 1 是模拟量采集卡，从站 2 和 3 是两个关节驱动器：J1、J2。"],
+  ["The master is real open-source code, SOEM. The slaves are simulated chips.","主站是真实的开源代码 SOEM，从站是模拟出来的芯片。"],
+  ["Every number in this course comes from running it.","这门课里的每个数字，都来自真实运行。"],
+  ["Every 1 ms, the master sends J1 and J2 a new target position.","主站每 1 毫秒给 J1、J2 发一个新的目标位置。"],
+  ["Both follow the same slow wave, so they should always be in the same place.","两个关节走同一条缓慢的正弦曲线，所以它们应该永远在同一个位置。"]
+ ]},
+ {"id":"error","title":"Error = speed × time","zh":"误差 = 速度 × 时间","lines":[
+  ["A moving joint does not wait for you.","运动中的关节不会等你。"],
+  ["Apply a target late, and the joint is behind by speed × lateness.","目标晚一点生效，关节就落后：落后量 = 速度 × 晚了多久。"],
+  ["A machine tool at F1000 moves 1000 mm per minute: about 16.7 mm per second.","机床走 F1000：每分钟 1000 毫米，约每秒 16.7 毫米。"],
+  ["1 ms late: 16.7 mm/s × 0.001 s ≈ 0.017 mm, about 17 µm.","晚 1 毫秒：16.7 mm/s × 0.001 s ≈ 0.017 mm，约 17 微米。"],
+  ["A robot joint turning 180° per second: 1 ms late is 0.18°.","机器人关节每秒转 180°：晚 1 毫秒就是 0.18°。"],
+  ["At the end of a 0.5 m arm, 0.18° is about 1.6 mm.","在 0.5 米长的手臂末端，0.18° 约等于 1.6 毫米。"],
+  ["For a moving machine, a timing error is a position error.","对运动中的机器来说，时间误差就是位置误差。"]
+ ]},
+ {"id":"two","title":"Two kinds of timing error","zh":"两种时间误差","lines":[
+  ["Timing can go wrong in two different ways.","时间可以错在两个地方。"],
+  ["Skew: within one cycle, J1 and J2 act at different moments.","偏差（skew）：同一个周期里，J1 和 J2 动作的时刻不一样。"],
+  ["Jitter: the cycle itself wobbles. 1 ms becomes 0.8, then 1.2.","抖动（jitter）：周期本身在晃。1 毫秒一会儿变 0.8，一会儿变 1.2。"],
+  ["Skew makes the joints disagree with each other.","偏差让关节之间对不上。"],
+  ["Jitter makes the whole motion stumble, even when the joints agree.","抖动让整个动作磕磕绊绊，哪怕关节彼此一致。"],
+  ["Like a band that plays together, but follows a conductor whose beat wobbles.","像一支乐队：大家彼此很齐，但指挥的拍子忽快忽慢。"]
+ ]},
+ {"id":"canopen","title":"How CANopen handles it","zh":"CANopen 的做法","lines":[
+  ["Send each motor its command in turn, and the first moves before the last one hears.","如果挨个给电机发命令，第一个已经动了，最后一个才收到。"],
+  ["That is skew. CANopen's CSP mode fixes it with one broadcast.","这就是偏差。CANopen 的 CSP 模式用一条广播来解决。"],
+  ["First each drive gets its target. Then one SYNC message, ID 0x80, says: everyone, go.","先把目标分别发给每个驱动器，再发一条 SYNC 报文（ID 0x80）：大家一起动。"],
+  ["One message reaches every drive together, so skew is small.","一条报文同时到达所有驱动器，偏差就小了。"],
+  ["But when does SYNC leave? When the master's software timer fires.","但 SYNC 什么时候发出？取决于主站的软件定时器。"],
+  ["If the bus is busy, SYNC waits. One 8-byte CAN frame takes about 0.1 ms at 1 Mbit/s.","总线正忙，SYNC 就得等。1 Mbit/s 下，一个 8 字节的 CAN 帧约要 0.1 毫秒。"],
+  ["Then each drive reacts through an interrupt, which adds its own delay.","每个驱动器还要经过中断才响应，又添一段延迟。"],
+  ["So SYNC fixes skew, not jitter. Every drive inherits the master's wobble.","所以 SYNC 治了偏差，治不了抖动：每个驱动器都继承了主站的晃动。"]
+ ]},
+ {"id":"guess","title":"Guess first","zh":"先猜一猜","lines":[
+  ["Back on our line. First, the drives act the moment new targets arrive.","回到我们的总线。先让驱动器在新目标到达的那一刻动作。"],
+  ["The master tries to send exactly every 1 ms.","主站尽量每 1 毫秒准时发一次。"],
+  ["Guess: how far from 1 ms will the real cycles land?","猜一猜：实际的周期会偏离 1 毫秒多少？","","pause"]
+ ]},
+ {"id":"run","title":"The real run","zh":"真实运行","lines":[
+  ["3 seconds of running: about 2,500 cycles measured at J1.","运行 3 秒：在 J1 上测到约 2500 个周期。"],
+  ["Most cycles stay near 1 ms. But some come hundreds of microseconds early or late.","大多数周期在 1 毫秒附近，但总有一些早到或晚到几百微秒。"],
+  ["The spread, one standard deviation, is tens of microseconds, in every run.","离散程度（一个标准差）每次运行都是几十微秒。"],
+  ["The wobble comes from the master: an ordinary Mac, not a real-time system.","这些晃动来自主站：一台普通的 Mac，不是实时系统。"],
+  ["A real-time OS makes it much smaller, but never zero.","换成实时操作系统能小很多，但永远不会是零。"],
+  ["Now J1 against J2: they act 310 ns apart, in every cycle.","再看 J1 和 J2 之间：每个周期都相差 310 纳秒。"],
+  ["310 ns is the simulated cable and chip delay. One frame passes J1, then J2.","310 纳秒是模拟的网线加芯片延迟：同一帧先经过 J1，再经过 J2。"],
+  ["So skew is tiny. Episode 3 shows how one frame does that.","所以偏差很小。一帧怎么做到这一点，第 3 集再讲。"],
+  ["But the jitter goes straight through to the motors.","可是抖动原封不动地传给了电机。"],
+  ["At 180°/s, a cycle 0.2 ms late leaves J1 0.036° behind: about 0.3 mm at the arm tip.","以每秒 180° 计，晚到 0.2 毫秒的周期让 J1 落后 0.036°，在手臂末端约 0.3 毫米。"]
+ ]},
+ {"id":"dc","title":"What EtherCAT does instead","zh":"EtherCAT 的做法","lines":[
+  ["Same line, one change: each drive acts on its own clock.","同一条总线，只改一处：每个驱动器按自己的时钟动作。"],
+  ["Every slave chip has a clock. EtherCAT keeps all those clocks in step.","每个从站芯片里都有一个时钟。EtherCAT 让这些时钟步调一致。"],
+  ["This is called the Distributed Clock, DC for short.","这叫分布式时钟（Distributed Clock），简称 DC。"],
+  ["Every 1 ms by its own clock, each drive fires a pulse called SYNC0, and acts on it.","每个驱动器按自己的时钟，每 1 毫秒产生一个叫 SYNC0 的脉冲，就在这一刻动作。"],
+  ["The frame only has to arrive before SYNC0. Exactly when no longer matters.","帧只要在 SYNC0 之前到就行，具体哪一刻到已经无所谓。"],
+  ["Same master, same Mac, the sending still wobbles.","主站还是那台 Mac，发送照样在晃。"],
+  ["Cycle spread at the drives: about 5 ns, in every run.","驱动器上的周期离散：约 5 纳秒，每次运行都一样。"],
+  ["Once the clocks settle, J1 and J2 act within about 10 ns of each other.","时钟稳定下来以后，J1 和 J2 动作的时刻相差在 10 纳秒左右。"],
+  ["From tens of microseconds to a few nanoseconds: about ten thousand times tighter.","从几十微秒到几纳秒：大约收紧了一万倍。"],
+  ["Note: how fast the clocks settle comes from our simulated chip, not a real one.","注意：时钟多快能稳定，取决于我们模拟的芯片，不是某款真实芯片的数据。"]
+ ]},
+ {"id":"road","title":"How is that possible?","zh":"这是怎么做到的？","lines":[
+  ["Getting there takes four questions, one at a time.","要做到这一点，需要回答四个问题，一个一个来。"],
+  ["How is one cable already a ring? Episode 2.","一根网线，怎么就已经是一个环？第 2 集。"],
+  ["How does one frame serve every slave without stopping? Episode 3.","一帧怎么不停下来，就服务了每一个从站？第 3 集。"],
+  ["How does the line start up and agree who sends what? Episode 4.","总线怎么启动，怎么约定谁收发哪些数据？第 4 集。"],
+  ["How do clocks in different chips agree to a few nanoseconds? Episode 5.","不同芯片里的时钟，怎么对齐到几纳秒？第 5 集。"]
+ ]},
+ {"id":"recap","title":"Recap","zh":"本集要点","lines":[
+  ["One: for a moving machine, timing error is position error. Speed × time.","一、对运动中的机器，时间误差就是位置误差：速度 × 时间。"],
+  ["Two: skew and jitter differ. One is between joints, the other is the beat itself.","二、偏差和抖动是两回事：一个在关节之间，一个是节拍本身。"],
+  ["Three: acting when a message arrives inherits the sender's jitter. A shared clock removes it.","三、收到报文就动作，会继承发送方的抖动；共享的时钟才能去掉它。"]
+ ]},
+ {"id":"turn","title":"Your turn","zh":"你来算","lines":[
+  ["A joint turns at 90° per second. One cycle arrives 0.3 ms late.","一个关节每秒转 90°，某个周期晚到了 0.3 毫秒。"],
+  ["How far behind is it, in degrees?","它落后了多少度？","","pause"],
+  ["90°/s × 0.0003 s = 0.027°.","90°/s × 0.0003 s = 0.027°。"],
+  ["Next: one cable, and why it is already a ring.","下一集：一根网线，为什么它已经是一个环。"]
+ ]}
+]

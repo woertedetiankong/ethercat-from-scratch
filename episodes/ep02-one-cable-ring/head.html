@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一根网线就是一个环 · Episode 02</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@500;600&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@500&display=swap">
+<style>
+  html,body{margin:0;height:100%;background:#070B16;color:#F3EBDD;font-family:"IBM Plex Sans",system-ui,sans-serif}
+  .player{max-width:1280px;margin:0 auto;padding:24px 16px;display:flex;flex-direction:column;gap:12px}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#0B1120}
+  .bar{display:flex;gap:12px;align-items:center}
+  .bar button{font:inherit;background:#F3EBDD;color:#0B1120;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;min-width:84px}
+  .bar input{flex:1;accent-color:#FFC24B}
+  .bar span{font-family:"JetBrains Mono",monospace;font-size:13px;color:#8D98B0;font-variant-numeric:tabular-nums}
+  body.record .bar{display:none} body.record .player{padding:0;max-width:none} body.record canvas{border-radius:0;width:1920px}
+</style>
+</head>
+<body>
+<div class="player">
+  <canvas id="cv" width="1920" height="1080"></canvas>
+  <div class="bar"><button id="pp" type="button">Play</button><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="tm">0:00</span></div>
+</div>
+<audio id="au" src="narration.mp3" preload="auto"></audio>
+<script>
+var TL = /*TIMELINE*/null;
+var W = 1920, H = 1080;
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const C = {bg:'#0B1120', bg2:'#16223E', ink:'#F3EBDD', dim:'#8D98B0', faint:'#3A4766', line:'#28344F', panel:'#121B31', panel2:'#1A2642',
+  sky:'#6EC8FF', coral:'#FF7A59', gold:'#FFC24B', mint:'#5EE0A8', red:'#FF4D5E', violet:'#B69CFF'};
+const F = {disp:'"Fraunces", Georgia, serif', sans:'"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif', mono:'"JetBrains Mono", Menlo, monospace', code:'Menlo, Consolas, "DejaVu Sans Mono", monospace', zh:'"Noto Sans SC", "PingFang SC", sans-serif'};
+
+/* ---------- math ---------- */
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const ramp = (t,a,b) => clamp((t-a)/(b-a), 0, 1);
+const eio = x => x<.5 ? 4*x*x*x : 1 - Math.pow(-2*x+2,3)/2;
+const eo = x => 1 - Math.pow(1-x,3);
+const eback = x => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); };
+const lerp = (a,b,t) => a + (b-a)*t;
+const rnd = i => { const x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); };
+const rgba = (hex,a) => { const n = parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+function mixHex(a,b,t){ const x=parseInt(a.slice(1),16), y=parseInt(b.slice(1),16); const c=(s)=>Math.round(lerp(x>>s&255, y>>s&255, t)); return '#'+((c(16)<<16)|(c(8)<<8)|c(0)).toString(16).padStart(6,'0'); }
+
+/* ---------- drawing primitives ---------- */
+function text(s,x,y,o={}){
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.font = `${o.weight||500} ${o.size||28}px ${o.font||F.sans}`;
+  ctx.fillStyle = o.color || C.ink; ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+  if (o.ls) ctx.letterSpacing = o.ls + 'px';
+  if (o.shadow){ ctx.shadowColor = o.shadow; ctx.shadowBlur = 24; }
+  ctx.fillText(s,x,y); ctx.restore();
+}
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+function glow(x,y,r,color,a=1){ const g = ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0, rgba(color,.5*a)); g.addColorStop(1, rgba(color,0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+function dot(x,y,r,color,a=1){ ctx.save(); ctx.globalAlpha *= a; glow(x,y,r*3.6,color,.9); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function qpt(a,b,bend,t){ const mx=(a.x+b.x)/2, my=(a.y+b.y)/2, dx=b.x-a.x, dy=b.y-a.y, cx=mx-dy*bend, cy=my+dx*bend, u=1-t; return {x:u*u*a.x+2*u*t*cx+t*t*b.x, y:u*u*a.y+2*u*t*cy+t*t*b.y}; }
+function packet(a,b,p,color,o={}){
+  if (p <= 0 || p >= 1) return null;
+  const r = o.r || 9, bend = o.bend || 0;
+  ctx.save();
+  for (let i=10;i>=1;i--){ const q = qpt(a,b,bend,Math.max(0,p - .012*i)); ctx.globalAlpha = .045*(11-i); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(q.x,q.y,r*(1-i*.06),0,Math.PI*2); ctx.fill(); }
+  ctx.restore();
+  const q = qpt(a,b,bend,p);
+  if (o.shape === 'sq'){ ctx.save(); glow(q.x,q.y,r*3.4,color); ctx.fillStyle = color; rr(q.x-r,q.y-r,2*r,2*r,3); ctx.fill(); ctx.restore(); }
+  else dot(q.x,q.y,r,color);
+  if (o.label) text(o.label, q.x, q.y - r - 22, {size:o.ls||24, font:F.mono, weight:700, color});
+  return q;
+}
+function burst(x,y,k,color=C.red){ // k in 0..1
+  if (k <= 0 || k >= 1) return;
+  ctx.save(); ctx.globalAlpha *= 1-k;
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x,y,14+60*eo(k),0,Math.PI*2); ctx.stroke();
+  const s = 16; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke();
+  ctx.restore();
+}
+function cross(x,y,s,color,lw=7,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke(); ctx.restore(); }
+function check(x,y,s,color,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x-s,y); ctx.lineTo(x-s*.3,y+s*.7); ctx.lineTo(x+s,y-s*.6); ctx.stroke(); ctx.restore(); }
+function ringArc(x,y,r,frac,color,lw=6,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = rgba(color,.18); ctx.lineWidth = lw; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle = color; ctx.lineCap='round'; ctx.beginPath(); ctx.arc(x,y,r,-Math.PI/2,-Math.PI/2 + Math.PI*2*clamp(frac,0,1)); ctx.stroke(); ctx.restore(); }
+function pulse(x,y,k,color,r0=40,r1=120){ if (k<=0||k>=1) return; ctx.save(); ctx.globalAlpha *= (1-k); ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x,y,lerp(r0,r1,eo(k)),0,Math.PI*2); ctx.stroke(); ctx.restore(); }
+function tag(s,x,y,color,o={}){
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.font = `700 ${o.size||22}px ${F.mono}`; const w = ctx.measureText(s).width + 28, h = (o.size||22) + 18;
+  rr(x-w/2, y-h/2, w, h, h/2); ctx.fillStyle = rgba(color,.16); ctx.fill(); ctx.strokeStyle = rgba(color,.7); ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s,x,y+1); ctx.restore();
+}
+function server(x,y,w,h,o={}){
+  const st = o.state || 'ok', a = o.alpha ?? 1;
+  const edge = st==='dead' ? C.red : st==='hot' ? C.coral : o.edge || C.sky;
+  ctx.save(); ctx.globalAlpha *= a;
+  if (st !== 'dead') glow(x,y,Math.max(w,h)*.9, edge, st==='hot'?.35:.18);
+  const g = ctx.createLinearGradient(0,y-h/2,0,y+h/2); g.addColorStop(0, st==='dead'?'#2A1822':C.panel2); g.addColorStop(1, st==='dead'?'#1A1018':C.panel);
+  rr(x-w/2,y-h/2,w,h,14); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = rgba(edge, st==='dead'?.8:.75); ctx.stroke();
+  const rows = o.rows ?? 3, pad = 16, rh = (h - pad*2) / rows;
+  for (let i=0;i<rows;i++){
+    const ry = y - h/2 + pad + rh*i + rh/2;
+    rr(x-w/2+pad, ry-rh*.32, w-pad*2, rh*.64, 6); ctx.fillStyle = 'rgba(255,255,255,.035)'; ctx.fill();
+    const on = st==='dead' ? .12 : .35 + .65*(rnd(Math.floor((o.t||0)*6)+i*17+(o.seed||0))>.4 ? 1 : .3);
+    ctx.fillStyle = rgba(st==='dead'?C.red:(o.led||C.mint), on); ctx.beginPath(); ctx.arc(x+w/2-pad-12, ry, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = rgba(C.dim, .35); for (let k=0;k<3;k++) ctx.fillRect(x-w/2+pad+14+k*16, ry-2, 9, 4);
+  }
+  if (o.prog != null && o.prog > 0){ rr(x-w/2+pad, y+h/2-12, (w-pad*2)*o.prog, 5, 2.5); ctx.fillStyle = C.gold; ctx.fill(); }
+  ctx.restore();
+  if (o.label) text(o.label, x, y + h/2 + 28, {size:o.lsize||24, font:F.mono, weight:500, color:st==='dead'?C.red:C.dim, alpha:a});
+  if (st === 'dead') cross(x, y, Math.min(w,h)*.22, C.red, 9, a*.9);
+}
+function user(x,y,a=1,color=C.dim){
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x,y-16,15,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y+26,27,Math.PI,0); ctx.fill(); ctx.restore();
+}
+function hexagon(x,y,r,a=1){
+  ctx.save(); ctx.globalAlpha *= a; glow(x,y,r*2.2,C.gold,.3);
+  ctx.beginPath(); for (let i=0;i<6;i++){ const an = Math.PI/6 + i*Math.PI/3; const px = x + r*Math.cos(an), py = y + r*Math.sin(an); i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); } ctx.closePath();
+  ctx.fillStyle = C.panel2; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = C.gold; ctx.stroke();
+  ctx.strokeStyle = rgba(C.gold,.8); ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for (let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(x-r*.35, y); ctx.lineTo(x+r*.35, y+i*r*.35); ctx.stroke(); }
+  ctx.restore();
+}
+function nodeCircle(x,y,r,o={}){
+  const role = o.role || 'follower', a = o.alpha ?? 1;
+  const col = role==='leader' ? C.gold : role==='candidate' ? C.coral : role==='dead' ? C.red : C.sky;
+  ctx.save(); ctx.globalAlpha *= a;
+  if (role !== 'dead') glow(x,y,r*2.1,col, role==='follower'?.25:.55);
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle = role==='dead' ? '#241722' : role==='leader' ? mixHex(C.panel2,C.gold,.22) : C.panel2; ctx.fill();
+  ctx.lineWidth = role==='follower' ? 3 : 5; ctx.strokeStyle = rgba(col, role==='dead'?.6:1); ctx.stroke();
+  ctx.restore();
+  text(o.name, x, y-6, {size:34, font:F.mono, weight:700, color: role==='dead'?C.faint:C.ink, alpha:a});
+  if (o.sub) text(o.sub, x, y+24, {size:18, font:F.mono, weight:500, color:C.dim, alpha:a});
+  if (role === 'leader'){ // crown
+    ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.gold; const cy = y - r - 26, s = 22;
+    ctx.beginPath(); ctx.moveTo(x-s,cy+10); ctx.lineTo(x-s,cy-6); ctx.lineTo(x-s*.5,cy+2); ctx.lineTo(x,cy-12); ctx.lineTo(x+s*.5,cy+2); ctx.lineTo(x+s,cy-6); ctx.lineTo(x+s,cy+10); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  if (role === 'dead') cross(x,y,r*.55,C.red,8,a*.9);
+}
+function wrapLines(s, maxW){ const words = s.split(' '), out = []; let cur = ''; for (const w of words){ const t = cur ? cur+' '+w : w; if (ctx.measureText(t).width > maxW && cur){ out.push(cur); cur = w; } else cur = t; } if (cur) out.push(cur); return out; }
+
+/* ---------- background ---------- */
+function background(t){
+  ctx.fillStyle = C.bg; ctx.fillRect(0,0,W,H);
+  const g = ctx.createRadialGradient(960,480,80,960,480,1150); g.addColorStop(0, C.bg2); g.addColorStop(1, rgba(C.bg,0)); ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = rgba(C.faint,.35); const off = (t*6)%48;
+  for (let x = 24; x < W; x += 48) for (let y = 24 + off; y < H; y += 48) ctx.fillRect(x, y, 2, 2);
+  const v = ctx.createRadialGradient(960,540,500,960,540,1250); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.55)'); ctx.fillStyle = v; ctx.fillRect(0,0,W,H);
+}
+
+/* ---------- more primitives: panels, files, disks, arrows, chips ---------- */
+function panel(x,y,w,h,o={}){ ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1); rr(x-w/2,y-h/2,w,h,o.r||14); ctx.fillStyle = o.fill || C.panel; ctx.fill(); ctx.lineWidth = o.lw || 2; ctx.strokeStyle = o.edge || C.line; if (o.dash) ctx.setLineDash(o.dash); ctx.stroke(); ctx.restore(); }
+function fileIcon(x,y,w,h,o={}){
+  const a = o.alpha ?? 1, c = o.color || C.sky, f = Math.min(18, w*.22);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; if (o.glow) glow(x,y,Math.max(w,h)*.9,c,o.glow);
+  ctx.beginPath(); ctx.moveTo(x-w/2,y-h/2); ctx.lineTo(x+w/2-f,y-h/2); ctx.lineTo(x+w/2,y-h/2+f); ctx.lineTo(x+w/2,y+h/2); ctx.lineTo(x-w/2,y+h/2); ctx.closePath();
+  ctx.fillStyle = o.fill || C.panel2; ctx.fill(); if (o.dash) ctx.setLineDash(o.dash); ctx.strokeStyle = c; ctx.lineWidth = o.lw || 2.5; ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x+w/2-f,y-h/2); ctx.lineTo(x+w/2-f,y-h/2+f); ctx.lineTo(x+w/2,y-h/2+f); ctx.stroke();
+  if (o.rows){ const n = o.rows, rh = Math.min(30, (h-36)/Math.max(n,1)); for (let k=0;k<n;k++){ const ry = y - h/2 + 22 + k*rh + rh/2, rc = o.rowColors ? o.rowColors[k] : c; rr(x-w/2+16, ry-rh*.22, (w-40)*(.55 + .4*rnd(k*7+(o.seed||0))), rh*.44, 4); ctx.fillStyle = rgba(rc,.75); ctx.fill(); } }
+  ctx.restore();
+  if (o.label) text(o.label, x, y + (o.ly || 0), {size:o.size||20, font:F.mono, weight:700, color:o.tcolor||c, alpha:a});
+}
+function cylinder(x,y,w,h,o={}){
+  const a = o.alpha ?? 1, c = o.color || C.sky, e = w*.16; if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; if (o.glow !== 0) glow(x,y,Math.max(w,h)*.85,c,o.glow ?? .2);
+  ctx.beginPath(); ctx.moveTo(x-w/2,y-h/2); ctx.lineTo(x-w/2,y+h/2); ctx.ellipse(x,y+h/2,w/2,e,0,Math.PI,0,true); ctx.lineTo(x+w/2,y-h/2); ctx.closePath();
+  ctx.fillStyle = C.panel2; ctx.fill(); ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x,y-h/2,w/2,e,0,0,Math.PI*2); ctx.fillStyle = mixHex(C.panel2,c,.18); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  if (o.inner) text(o.inner, x, y + e*.6, {size:o.isize||18, font:F.mono, weight:700, color:o.icolor||C.ink, alpha:a});
+  if (o.label) text(o.label, x, y + h/2 + e + 26, {size:o.size||22, font:F.mono, weight:700, color:o.tcolor||C.dim, alpha:a});
+}
+function arrow(a,b,color,o={}){
+  const p = o.p ?? 1, al = o.alpha ?? 1; if (p <= 0 || al <= 0) return;
+  const x = lerp(a.x,b.x,p), y = lerp(a.y,b.y,p), an = Math.atan2(b.y-a.y, b.x-a.x), s = o.head || 14;
+  ctx.save(); ctx.globalAlpha *= al; ctx.strokeStyle = color; ctx.lineWidth = o.lw || 3; ctx.lineCap = 'round'; if (o.dash) ctx.setLineDash(o.dash);
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(x - Math.cos(an)*s*.6, y - Math.sin(an)*s*.6); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x - s*Math.cos(an-.45), y - s*Math.sin(an-.45)); ctx.lineTo(x - s*Math.cos(an+.45), y - s*Math.sin(an+.45)); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function chip(s,x,y,c,k=1,o={}){ if (k <= 0) return; ctx.save(); ctx.translate(x,y); ctx.scale(k,k); tag(s,0,0,c,{size:o.size||20, alpha:o.alpha ?? 1}); ctx.restore(); }
+function lockIcon(x,y,s,color,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = s*.16; ctx.beginPath(); ctx.arc(x, y - s*.15, s*.36, Math.PI, 0); ctx.stroke(); rr(x - s*.55, y - s*.15, s*1.1, s*.85, s*.14); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
+// piecewise-linear map through [t, v] knots
+function knots(t, ks){ if (t <= ks[0][0]) return ks[0][1]; for (let i=1;i<ks.length;i++) if (t <= ks[i][0]) return lerp(ks[i-1][1], ks[i][1], (t - ks[i-1][0])/(ks[i][0] - ks[i-1][0])); return ks[ks.length-1][1]; }
+
+/* ---------- 3Blue1Brown-style primitives: formulas, joints, plots, gears, code ----------
+   eq(parts,cx,y,size,{left,glow,alpha}) parts = [str, color, alpha?, sub?] — colour each symbol by meaning, fade terms in one at a time
+   wipe(p,x,y,w,h,fn) reveals whatever fn draws left→right (the 'Write' feel); brace(x1,x2,y,label,color,a) a curly brace with a label
+   arm/arcArrow/springArc (rotating links, torques, springs), axes/plot (graphs drawn progressively), gear, codeBox, label2 (English over Chinese)
+   ------------------------------------------------------------------------------------------ */
+const DEG = Math.PI / 180;
+// math-ish font for formulas
+const MF = (size, w = 600) => `italic ${w} ${size}px ${F.disp}`;
+// parts: [string, color, alpha?, sub?]; drawn left→right, centred on cx (or left-aligned with o.left)
+function eq(parts, cx, y, size, o = {}) {
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  const wOf = p => { ctx.font = MF(p[3] ? size * .55 : size); return ctx.measureText(p[0]).width; };
+  const total = parts.reduce((s, p) => s + wOf(p), 0);
+  let x = o.left ? cx : cx - total / 2;
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  for (const p of parts) {
+    const w = wOf(p), a = p[2] ?? 1;
+    if (a > 0) { ctx.save(); ctx.globalAlpha *= a; ctx.font = MF(p[3] ? size * .55 : size); ctx.fillStyle = p[1];
+      if (o.glow && p[1] !== C.dim) { ctx.shadowColor = rgba(p[1], .55); ctx.shadowBlur = 18; }
+      ctx.fillText(p[0], x, y + (p[3] ? size * .28 : 0)); ctx.restore(); }
+    x += w;
+  }
+  ctx.restore(); return total;
+}
+// a joint: pivot at (px,py), link of length L at angle th (radians, CCW from +x, screen y up)
+const tip = (px, py, L, th) => ({x: px + L * Math.cos(th), y: py - L * Math.sin(th)});
+function arm(px, py, L, th, o = {}) {
+  const a = o.alpha ?? 1; if (a <= 0) return;
+  const e = tip(px, py, L, th), c = o.color || C.sky;
+  ctx.save(); ctx.globalAlpha *= a; ctx.lineCap = 'round';
+  if (o.ghost) { ctx.setLineDash([14, 14]); ctx.strokeStyle = rgba(c, .8); ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(e.x, e.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.x, e.y, o.mass || 22, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return; }
+  glow((px + e.x) / 2, (py + e.y) / 2, L * .6, c, .25);
+  ctx.strokeStyle = c; ctx.lineWidth = o.lw || 18; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(e.x, e.y); ctx.stroke();
+  ctx.fillStyle = C.panel2; ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(px, py, 24, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = o.massColor || C.ink; ctx.beginPath(); ctx.arc(e.x, e.y, o.mass || 22, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+// curved arrow along a circle of radius r from angle a0 to a1 (math angles)
+function arcArrow(px, py, r, a0, a1, color, o = {}) {
+  const al = o.alpha ?? 1; if (al <= 0 || Math.abs(a1 - a0) < .01) return;
+  ctx.save(); ctx.globalAlpha *= al; ctx.strokeStyle = color; ctx.lineWidth = o.lw || 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(px, py, r, -a0, -a1, a1 > a0); ctx.stroke();
+  const dir = Math.sign(a1 - a0), e = tip(px, py, r, a1), tan = -a1 - dir * Math.PI / 2, s = o.head || 20;
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(e.x + Math.cos(tan) * s * .2, e.y + Math.sin(tan) * s * .2);
+  ctx.lineTo(e.x - Math.cos(tan - .5) * s, e.y - Math.sin(tan - .5) * s); ctx.lineTo(e.x - Math.cos(tan + .5) * s, e.y - Math.sin(tan + .5) * s); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+// coil spring drawn along an arc of radius r between angles a0 and a1
+function springArc(px, py, r, a0, a1, color, o = {}) {
+  const al = o.alpha ?? 1; if (al <= 0) return;
+  const n = 120, coils = Math.max(4, Math.abs(a1 - a0) / DEG / 4), amp = o.amp || 16;
+  ctx.save(); ctx.globalAlpha *= al; ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.beginPath();
+  for (let i = 0; i <= n; i++) { const u = i / n, an = lerp(a0, a1, u), rad = r + amp * Math.sin(u * coils * Math.PI * 2) * Math.min(1, u * 8, (1 - u) * 8);
+    const q = tip(px, py, rad, an); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.stroke(); ctx.restore();
+}
+// axes with origin at (x, y0): width w, half-height h
+function axes(x, y0, w, h, o = {}) {
+  const a = o.alpha ?? 1; if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.dim; ctx.lineWidth = 2.5;
+  arrow({x, y: y0 + (o.full ? h : 0)}, {x, y: y0 - h - 10}, C.dim, {lw: 2.5, head: 12});
+  arrow({x: x - (o.both ? w : 0), y: y0}, {x: x + w + 10, y: y0}, C.dim, {lw: 2.5, head: 12});
+  ctx.restore();
+  if (o.xl) text(o.xl, x + w + 10, y0 + 34, {size: 24, font: F.mono, color: C.dim, align: 'right', alpha: a});
+  if (o.yl) text(o.yl, x + 14, y0 - h - 10, {size: 26, font: F.mono, color: C.dim, align: 'left', alpha: a});
+}
+// plot fn(u) for u in [0, prog] mapped to x..x+w; value v ↦ y0 - v*k
+function plot(fn, x, y0, w, k, prog, color, o = {}) {
+  if (prog <= 0) return null;
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1); ctx.strokeStyle = color; ctx.lineWidth = o.lw || 5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.shadowColor = rgba(color, .6); ctx.shadowBlur = 14; ctx.beginPath();
+  const n = 300; let q;
+  for (let i = 0; i <= n * prog; i++) { const u = i / n; q = {x: x + u * w, y: y0 - fn(u) * k}; i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.stroke(); ctx.restore();
+  return q;
+}
+function gear(x, y, r, teeth, rot, color, o = {}) {
+  const a = o.alpha ?? 1; if (a <= 0) return;
+  const depth = o.depth || 12, n = teeth * 4;
+  ctx.save(); ctx.globalAlpha *= a; glow(x, y, r * 1.4, color, .25); ctx.beginPath();
+  for (let i = 0; i <= n; i++) { const an = rot + i / n * Math.PI * 2, rad = (i % 4 === 1 || i % 4 === 2) ? r + depth : r;
+    const q = {x: x + rad * Math.cos(an), y: y + rad * Math.sin(an)}; i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.closePath(); ctx.fillStyle = mixHex(C.panel2, color, .22); ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = rgba(color, .9); ctx.lineWidth = Math.max(3, r * .05);
+  const sp = o.spokes || 3;
+  for (let i = 0; i < sp; i++) { const an = rot + i / sp * Math.PI * 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + r * .78 * Math.cos(an), y + r * .78 * Math.sin(an)); ctx.stroke(); }
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, Math.max(6, r * .12), 0, Math.PI * 2); ctx.fill();
+  if (o.mark) { const q = {x: x + r * .78 * Math.cos(rot), y: y + r * .78 * Math.sin(rot)}; ctx.fillStyle = C.gold; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(7, r * .06), 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+// Every code pane reports itself while it is on screen: slides.mjs collects these into the 课件's code index.
+// A helper that draws real source calls codeShown({file, a, b, fn?, key?}) (lines a–b of the file); codeBox reports its title.
+const codeShown = info => { if (window.__codeSink) window.__codeSink(info); };
+// code panel; lines: [text, color?]; hl(i) → highlight 0..1, mark(i) → [glyph, color, alpha]
+function codeBox(x, y, w, title, lines, o = {}) {
+  const lh = o.lh || 50, h = 90 + lines.length * lh, a = o.alpha ?? 1; if (a <= 0) return;
+  if (a > .5) codeShown({title, file: o.file, a: o.from, b: o.to});
+  panel(x + w / 2, y + h / 2, w, h, {alpha: a, fill: '#0E1628'});
+  ctx.save(); ctx.globalAlpha *= a;
+  [C.red, C.gold, C.mint].forEach((c, i) => { ctx.fillStyle = rgba(c, .7); ctx.beginPath(); ctx.arc(x + 30 + i * 26, y + 32, 7, 0, Math.PI * 2); ctx.fill(); });
+  ctx.restore();
+  text(title, x + 120, y + 33, {size: 22, font: F.mono, color: C.dim, align: 'left', alpha: a});
+  lines.forEach((l, i) => {
+    const ly = y + 90 + i * lh, h1 = o.hl ? o.hl(i) : 0;
+    if (h1 > 0) { ctx.save(); ctx.globalAlpha *= a * h1; rr(x + 14, ly - lh / 2 + 4, w - 28, lh - 8, 8); ctx.fillStyle = rgba(l[2] || C.gold, .14); ctx.fill(); ctx.fillStyle = l[2] || C.gold; ctx.fillRect(x + 14, ly - lh / 2 + 6, 5, lh - 12); ctx.restore(); }
+    const dimmed = o.hl ? .45 + .55 * Math.max(h1, o.base ?? 0) : 1;
+    text(l[0], x + 40, ly, {size: o.size || 27, font: F.code, weight: 500, color: l[1] || C.ink, align: 'left', alpha: a * dimmed});
+    const m = o.mark && o.mark(i); if (m && m[2] > 0) text(m[0], x + w - 40, ly, {size: 30, font: F.mono, weight: 700, color: m[1], align: 'right', alpha: a * m[2]});
+  });
+  return h;
+}
+function label2(en, zh, x, y, o = {}) { // English over Chinese
+  const a = o.alpha ?? 1, c = o.color || C.ink;
+  text(en, x, y, {size: o.size || 30, weight: 600, color: c, align: o.align || 'center', alpha: a});
+  text(zh, x, y + (o.size || 30) * 1.15, {size: (o.size || 30) * .72, font: F.zh, color: C.dim, align: o.align || 'center', alpha: a});
+}
+// damped step response, ζ<1 : value goes 0 → 1
+const stepResp = (t, w, z) => { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z / Math.sqrt(1 - z * z) * Math.sin(wd * t)); };
+// reveal what fn() draws from left to right, p in 0..1 (a 'Write' animation for formulas, curves, rows of chips)
+function wipe(p, x, y, w, h, fn) { if (p <= 0) return; ctx.save(); ctx.beginPath(); ctx.rect(x, y, w * clamp(p, 0, 1), h); ctx.clip(); fn(); ctx.restore(); }
+// curly brace under (dir=1) or over (dir=-1) the span x1..x2 at height y, with a label
+function brace(x1, x2, y, label, color, a = 1, dir = 1) {
+  if (a <= 0) return; const m = (x1 + x2) / 2, d = 18 * dir;
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(x1, y); ctx.quadraticCurveTo(x1, y + d, x1 + 20, y + d); ctx.lineTo(m - 20, y + d); ctx.quadraticCurveTo(m, y + d, m, y + 2 * d);
+  ctx.quadraticCurveTo(m, y + d, m + 20, y + d); ctx.lineTo(x2 - 20, y + d); ctx.quadraticCurveTo(x2, y + d, x2, y); ctx.stroke(); ctx.restore();
+  if (label) text(label, m, y + 2 * d + 26 * dir, {size: 26, color, alpha: a, font: /[一-鿿]/.test(label) ? F.zh : F.sans});
+}

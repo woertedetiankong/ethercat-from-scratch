@@ -1,0 +1,512 @@
+{
+ "total": 462.581,
+ "scenes": [
+  {
+   "id": "intro",
+   "title": "The 1 ms problem",
+   "zh": "1 毫秒的问题",
+   "start": 0.0,
+   "dur": 25.458,
+   "beats": [
+    {
+     "text": "Two robot joints get the same command at the same time.",
+     "zh": "两个机器人关节，在同一时刻收到同样的命令。",
+     "start": 0.9,
+     "dur": 5.383
+    },
+    {
+     "text": "Will they really move at the same moment?",
+     "zh": "它们真的会在同一瞬间动起来吗？",
+     "start": 6.883,
+     "dur": 4.078
+    },
+    {
+     "text": "This course is about EtherCAT, the bus inside many robot joints.",
+     "zh": "这门课讲 EtherCAT，很多机器人关节里用的就是这条总线。",
+     "start": 11.561,
+     "dur": 5.383
+    },
+    {
+     "text": "Before how it works, one question: why does timing matter so much?",
+     "zh": "讲它怎么工作之前，先回答一个问题：为什么时间这么要紧？",
+     "start": 17.544,
+     "dur": 6.314
+    }
+   ]
+  },
+  {
+   "id": "line",
+   "title": "Our line",
+   "zh": "我们的总线",
+   "start": 25.458,
+   "dur": 53.24,
+   "beats": [
+    {
+     "text": "Every episode uses the same small line.",
+     "zh": "每一集都用同一条小总线。",
+     "start": 0.9,
+     "dur": 3.8
+    },
+    {
+     "text": "One master, then three slaves on one cable.",
+     "zh": "一个主站，后面一根网线串着三个从站。",
+     "start": 5.3,
+     "dur": 4.41
+    },
+    {
+     "text": "Master: the controller that sends commands. Slave: a device that obeys and reports.",
+     "zh": "主站：发命令的控制器。从站：听命令、回数据的设备。",
+     "start": 10.31,
+     "dur": 6.252
+    },
+    {
+     "text": "Slave 1 is an analog input card. Slaves 2 and 3 are joint drives, J1 and J2.",
+     "zh": "从站 1 是模拟量采集卡，从站 2 和 3 是两个关节驱动器：J1、J2。",
+     "start": 17.162,
+     "dur": 7.991
+    },
+    {
+     "text": "The master is real open-source code, SOEM. The slaves are simulated chips.",
+     "zh": "主站是真实的开源代码 SOEM，从站是模拟出来的芯片。",
+     "start": 25.753,
+     "dur": 5.817
+    },
+    {
+     "text": "Every number in this course comes from running it.",
+     "zh": "这门课里的每个数字，都来自真实运行。",
+     "start": 32.17,
+     "dur": 4.513
+    },
+    {
+     "text": "Every 1 ms, the master sends J1 and J2 a new target position.",
+     "zh": "主站每 1 毫秒给 J1、J2 发一个新的目标位置。",
+     "start": 37.283,
+     "dur": 6.252
+    },
+    {
+     "text": "Both follow the same slow wave, so they should always be in the same place.",
+     "zh": "两个关节走同一条缓慢的正弦曲线，所以它们应该永远在同一个位置。",
+     "start": 44.135,
+     "dur": 7.505
+    }
+   ]
+  },
+  {
+   "id": "error",
+   "title": "Error = speed × time",
+   "zh": "误差 = 速度 × 时间",
+   "start": 78.698,
+   "dur": 47.691,
+   "beats": [
+    {
+     "text": "A moving joint does not wait for you.",
+     "zh": "运动中的关节不会等你。",
+     "start": 0.9,
+     "dur": 4.078
+    },
+    {
+     "text": "Apply a target late, and the joint is behind by speed × lateness.",
+     "zh": "目标晚一点生效，关节就落后：落后量 = 速度 × 晚了多久。",
+     "start": 5.578,
+     "dur": 6.252
+    },
+    {
+     "text": "A machine tool at F1000 moves 1000 mm per minute: about 16.7 mm per second.",
+     "zh": "机床走 F1000：每分钟 1000 毫米，约每秒 16.7 毫米。",
+     "start": 12.43,
+     "dur": 7.122
+    },
+    {
+     "text": "1 ms late: 16.7 mm/s × 0.001 s ≈ 0.017 mm, about 17 µm.",
+     "zh": "晚 1 毫秒：16.7 mm/s × 0.001 s ≈ 0.017 mm，约 17 微米。",
+     "start": 20.152,
+     "dur": 6.687
+    },
+    {
+     "text": "A robot joint turning 180° per second: 1 ms late is 0.18°.",
+     "zh": "机器人关节每秒转 180°：晚 1 毫秒就是 0.18°。",
+     "start": 27.439,
+     "dur": 5.817
+    },
+    {
+     "text": "At the end of a 0.5 m arm, 0.18° is about 1.6 mm.",
+     "zh": "在 0.5 米长的手臂末端，0.18° 约等于 1.6 毫米。",
+     "start": 33.856,
+     "dur": 6.252
+    },
+    {
+     "text": "For a moving machine, a timing error is a position error.",
+     "zh": "对运动中的机器来说，时间误差就是位置误差。",
+     "start": 40.708,
+     "dur": 5.383
+    }
+   ]
+  },
+  {
+   "id": "two",
+   "title": "Two kinds of timing error",
+   "zh": "两种时间误差",
+   "start": 126.389,
+   "dur": 36.057,
+   "beats": [
+    {
+     "text": "Timing can go wrong in two different ways.",
+     "zh": "时间可以错在两个地方。",
+     "start": 0.9,
+     "dur": 4.078
+    },
+    {
+     "text": "Skew: within one cycle, J1 and J2 act at different moments.",
+     "zh": "偏差（skew）：同一个周期里，J1 和 J2 动作的时刻不一样。",
+     "start": 5.578,
+     "dur": 5.383
+    },
+    {
+     "text": "Jitter: the cycle itself wobbles. 1 ms becomes 0.8, then 1.2.",
+     "zh": "抖动（jitter）：周期本身在晃。1 毫秒一会儿变 0.8，一会儿变 1.2。",
+     "start": 11.561,
+     "dur": 5.383
+    },
+    {
+     "text": "Skew makes the joints disagree with each other.",
+     "zh": "偏差让关节之间对不上。",
+     "start": 17.544,
+     "dur": 4.078
+    },
+    {
+     "text": "Jitter makes the whole motion stumble, even when the joints agree.",
+     "zh": "抖动让整个动作磕磕绊绊，哪怕关节彼此一致。",
+     "start": 22.222,
+     "dur": 5.383
+    },
+    {
+     "text": "Like a band that plays together, but follows a conductor whose beat wobbles.",
+     "zh": "像一支乐队：大家彼此很齐，但指挥的拍子忽快忽慢。",
+     "start": 28.205,
+     "dur": 6.252
+    }
+   ]
+  },
+  {
+   "id": "canopen",
+   "title": "How CANopen handles it",
+   "zh": "CANopen 的做法",
+   "start": 162.446,
+   "dur": 57.888,
+   "beats": [
+    {
+     "text": "Send each motor its command in turn, and the first moves before the last one hears.",
+     "zh": "如果挨个给电机发命令，第一个已经动了，最后一个才收到。",
+     "start": 0.9,
+     "dur": 7.557
+    },
+    {
+     "text": "That is skew. CANopen's CSP mode fixes it with one broadcast.",
+     "zh": "这就是偏差。CANopen 的 CSP 模式用一条广播来解决。",
+     "start": 9.057,
+     "dur": 5.383
+    },
+    {
+     "text": "First each drive gets its target. Then one SYNC message, ID 0x80, says: everyone, go.",
+     "zh": "先把目标分别发给每个驱动器，再发一条 SYNC 报文（ID 0x80）：大家一起动。",
+     "start": 15.04,
+     "dur": 7.122
+    },
+    {
+     "text": "One message reaches every drive together, so skew is small.",
+     "zh": "一条报文同时到达所有驱动器，偏差就小了。",
+     "start": 22.762,
+     "dur": 4.948
+    },
+    {
+     "text": "But when does SYNC leave? When the master's software timer fires.",
+     "zh": "但 SYNC 什么时候发出？取决于主站的软件定时器。",
+     "start": 28.31,
+     "dur": 5.383
+    },
+    {
+     "text": "If the bus is busy, SYNC waits. One 8-byte CAN frame takes about 0.1 ms at 1 Mbit/s.",
+     "zh": "总线正忙，SYNC 就得等。1 Mbit/s 下，一个 8 字节的 CAN 帧约要 0.1 毫秒。",
+     "start": 34.293,
+     "dur": 8.426
+    },
+    {
+     "text": "Then each drive reacts through an interrupt, which adds its own delay.",
+     "zh": "每个驱动器还要经过中断才响应，又添一段延迟。",
+     "start": 43.319,
+     "dur": 5.817
+    },
+    {
+     "text": "So SYNC fixes skew, not jitter. Every drive inherits the master's wobble.",
+     "zh": "所以 SYNC 治了偏差，治不了抖动：每个驱动器都继承了主站的晃动。",
+     "start": 49.736,
+     "dur": 6.552
+    }
+   ]
+  },
+  {
+   "id": "guess",
+   "title": "Guess first",
+   "zh": "先猜一猜",
+   "start": 220.334,
+   "dur": 21.91,
+   "beats": [
+    {
+     "text": "Back on our line. First, the drives act the moment new targets arrive.",
+     "zh": "回到我们的总线。先让驱动器在新目标到达的那一刻动作。",
+     "start": 0.9,
+     "dur": 6.314
+    },
+    {
+     "text": "The master tries to send exactly every 1 ms.",
+     "zh": "主站尽量每 1 毫秒准时发一次。",
+     "start": 7.814,
+     "dur": 4.513
+    },
+    {
+     "text": "Guess: how far from 1 ms will the real cycles land?",
+     "zh": "猜一猜：实际的周期会偏离 1 毫秒多少？",
+     "start": 12.927,
+     "dur": 7.383
+    }
+   ]
+  },
+  {
+   "id": "run",
+   "title": "The real run",
+   "zh": "真实运行",
+   "start": 242.244,
+   "dur": 68.858,
+   "beats": [
+    {
+     "text": "3 seconds of running: about 2,500 cycles measured at J1.",
+     "zh": "运行 3 秒：在 J1 上测到约 2500 个周期。",
+     "start": 0.9,
+     "dur": 4.948
+    },
+    {
+     "text": "Most cycles stay near 1 ms. But some come hundreds of microseconds early or late.",
+     "zh": "大多数周期在 1 毫秒附近，但总有一些早到或晚到几百微秒。",
+     "start": 6.448,
+     "dur": 7.122
+    },
+    {
+     "text": "The spread, one standard deviation, is tens of microseconds, in every run.",
+     "zh": "离散程度（一个标准差）每次运行都是几十微秒。",
+     "start": 14.17,
+     "dur": 5.817
+    },
+    {
+     "text": "The wobble comes from the master: an ordinary Mac, not a real-time system.",
+     "zh": "这些晃动来自主站：一台普通的 Mac，不是实时系统。",
+     "start": 20.587,
+     "dur": 6.252
+    },
+    {
+     "text": "A real-time OS makes it much smaller, but never zero.",
+     "zh": "换成实时操作系统能小很多，但永远不会是零。",
+     "start": 27.439,
+     "dur": 5.124
+    },
+    {
+     "text": "Now J1 against J2: they act 310 ns apart, in every cycle.",
+     "zh": "再看 J1 和 J2 之间：每个周期都相差 310 纳秒。",
+     "start": 33.163,
+     "dur": 5.817
+    },
+    {
+     "text": "310 ns is the simulated cable and chip delay. One frame passes J1, then J2.",
+     "zh": "310 纳秒是模拟的网线加芯片延迟：同一帧先经过 J1，再经过 J2。",
+     "start": 39.58,
+     "dur": 7.122
+    },
+    {
+     "text": "So skew is tiny. Episode 3 shows how one frame does that.",
+     "zh": "所以偏差很小。一帧怎么做到这一点，第 3 集再讲。",
+     "start": 47.302,
+     "dur": 5.817
+    },
+    {
+     "text": "But the jitter goes straight through to the motors.",
+     "zh": "可是抖动原封不动地传给了电机。",
+     "start": 53.719,
+     "dur": 4.513
+    },
+    {
+     "text": "At 180°/s, a cycle 0.2 ms late leaves J1 0.036° behind: about 0.3 mm at the arm tip.",
+     "zh": "以每秒 180° 计，晚到 0.2 毫秒的周期让 J1 落后 0.036°，在手臂末端约 0.3 毫米。",
+     "start": 58.832,
+     "dur": 8.426
+    }
+   ]
+  },
+  {
+   "id": "dc",
+   "title": "What EtherCAT does instead",
+   "zh": "EtherCAT 的做法",
+   "start": 311.102,
+   "dur": 69.759,
+   "beats": [
+    {
+     "text": "Same line, one change: each drive acts on its own clock.",
+     "zh": "同一条总线，只改一处：每个驱动器按自己的时钟动作。",
+     "start": 0.9,
+     "dur": 5.838
+    },
+    {
+     "text": "Every slave chip has a clock. EtherCAT keeps all those clocks in step.",
+     "zh": "每个从站芯片里都有一个时钟。EtherCAT 让这些时钟步调一致。",
+     "start": 7.338,
+     "dur": 6.252
+    },
+    {
+     "text": "This is called the Distributed Clock, DC for short.",
+     "zh": "这叫分布式时钟（Distributed Clock），简称 DC。",
+     "start": 14.19,
+     "dur": 4.513
+    },
+    {
+     "text": "Every 1 ms by its own clock, each drive fires a pulse called SYNC0, and acts on it.",
+     "zh": "每个驱动器按自己的时钟，每 1 毫秒产生一个叫 SYNC0 的脉冲，就在这一刻动作。",
+     "start": 19.303,
+     "dur": 8.426
+    },
+    {
+     "text": "The frame only has to arrive before SYNC0. Exactly when no longer matters.",
+     "zh": "帧只要在 SYNC0 之前到就行，具体哪一刻到已经无所谓。",
+     "start": 28.329,
+     "dur": 6.252
+    },
+    {
+     "text": "Same master, same Mac, the sending still wobbles.",
+     "zh": "主站还是那台 Mac，发送照样在晃。",
+     "start": 35.181,
+     "dur": 4.078
+    },
+    {
+     "text": "Cycle spread at the drives: about 5 ns, in every run.",
+     "zh": "驱动器上的周期离散：约 5 纳秒，每次运行都一样。",
+     "start": 39.859,
+     "dur": 5.383
+    },
+    {
+     "text": "Once the clocks settle, J1 and J2 act within about 10 ns of each other.",
+     "zh": "时钟稳定下来以后，J1 和 J2 动作的时刻相差在 10 纳秒左右。",
+     "start": 45.842,
+     "dur": 7.122
+    },
+    {
+     "text": "From tens of microseconds to a few nanoseconds: about ten thousand times tighter.",
+     "zh": "从几十微秒到几纳秒：大约收紧了一万倍。",
+     "start": 53.564,
+     "dur": 6.252
+    },
+    {
+     "text": "Note: how fast the clocks settle comes from our simulated chip, not a real one.",
+     "zh": "注意：时钟多快能稳定，取决于我们模拟的芯片，不是某款真实芯片的数据。",
+     "start": 60.416,
+     "dur": 7.743
+    }
+   ]
+  },
+  {
+   "id": "road",
+   "title": "How is that possible?",
+   "zh": "这是怎么做到的？",
+   "start": 380.861,
+   "dur": 32.424,
+   "beats": [
+    {
+     "text": "Getting there takes four questions, one at a time.",
+     "zh": "要做到这一点，需要回答四个问题，一个一个来。",
+     "start": 0.9,
+     "dur": 5.124
+    },
+    {
+     "text": "How is one cable already a ring? Episode 2.",
+     "zh": "一根网线，怎么就已经是一个环？第 2 集。",
+     "start": 6.624,
+     "dur": 4.513
+    },
+    {
+     "text": "How does one frame serve every slave without stopping? Episode 3.",
+     "zh": "一帧怎么不停下来，就服务了每一个从站？第 3 集。",
+     "start": 11.737,
+     "dur": 5.383
+    },
+    {
+     "text": "How does the line start up and agree who sends what? Episode 4.",
+     "zh": "总线怎么启动，怎么约定谁收发哪些数据？第 4 集。",
+     "start": 17.72,
+     "dur": 6.252
+    },
+    {
+     "text": "How do clocks in different chips agree to a few nanoseconds? Episode 5.",
+     "zh": "不同芯片里的时钟，怎么对齐到几纳秒？第 5 集。",
+     "start": 24.572,
+     "dur": 6.252
+    }
+   ]
+  },
+  {
+   "id": "recap",
+   "title": "Recap",
+   "zh": "本集要点",
+   "start": 413.285,
+   "dur": 24.196,
+   "beats": [
+    {
+     "text": "One: for a moving machine, timing error is position error. Speed × time.",
+     "zh": "一、对运动中的机器，时间误差就是位置误差：速度 × 时间。",
+     "start": 0.9,
+     "dur": 6.252
+    },
+    {
+     "text": "Two: skew and jitter differ. One is between joints, the other is the beat itself.",
+     "zh": "二、偏差和抖动是两回事：一个在关节之间，一个是节拍本身。",
+     "start": 7.752,
+     "dur": 7.122
+    },
+    {
+     "text": "Three: acting when a message arrives inherits the sender's jitter. A shared clock removes it.",
+     "zh": "三、收到报文就动作，会继承发送方的抖动；共享的时钟才能去掉它。",
+     "start": 15.474,
+     "dur": 7.122
+    }
+   ]
+  },
+  {
+   "id": "turn",
+   "title": "Your turn",
+   "zh": "你来算",
+   "start": 437.481,
+   "dur": 25.1,
+   "beats": [
+    {
+     "text": "A joint turns at 90° per second. One cycle arrives 0.3 ms late.",
+     "zh": "一个关节每秒转 90°，某个周期晚到了 0.3 毫秒。",
+     "start": 0.9,
+     "dur": 6.252
+    },
+    {
+     "text": "How far behind is it, in degrees?",
+     "zh": "它落后了多少度？",
+     "start": 7.752,
+     "dur": 5.8
+    },
+    {
+     "text": "90°/s × 0.0003 s = 0.027°.",
+     "zh": "90°/s × 0.0003 s = 0.027°。",
+     "start": 14.152,
+     "dur": 3.8
+    },
+    {
+     "text": "Next: one cable, and why it is already a ring.",
+     "zh": "下一集：一根网线，为什么它已经是一个环。",
+     "start": 18.552,
+     "dur": 4.948
+    }
+   ]
+  }
+ ]
+}

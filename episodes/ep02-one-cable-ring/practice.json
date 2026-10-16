@@ -1,0 +1,41 @@
+{
+ "about": "课件 practice page, read by slides.mjs. q / a / why = [中文, English]; scene = the video scene that asks it; src = SOEM lines it quotes; run = the command it quotes (data/runs.sh); reasoned = true when only arithmetic or reasoning backs it.",
+ "questions": [
+  {
+   "scene": "trip",
+   "q": ["一帧从主站出发，经过从站 1、J1、J2 再回来。它的第一个比特要多久回到主站？", "A frame leaves the master, passes slave 1, J1 and J2, and comes back. How long until its first bit is back at the master?"],
+   "a": ["1485 纳秒，约 1.5 微秒。去程 10 → 320 → 630 纳秒到达三个从站，在 J2 掉头，935 纳秒离开 J2，1205 离开 J1，1475 离开从站 1，1485 回到主站。", "1485 ns, about 1.5 µs. Going out it reaches the three slaves at 10, 320 and 630 ns, turns round in J2, leaves J2 at 935, J1 at 1205, slave 1 at 1475, and is back at 1485."],
+   "why": ["真实运行里每一帧都走同样的路径（data.py 逐帧检查）。延迟是模拟的：网线每米 5 纳秒；芯片去程 305 纳秒、回程 265 纳秒，取自 ET1100 数据手册的平均值。", "In the real run every frame takes the same path (data.py checks each one). The delays are simulated: 5 ns per metre of cable; 305 ns through the chip going out and 265 ns coming back, the ET1100 datasheet averages."],
+   "run": "episodes/ep02-one-cable-ring/data/runs.sh"
+  },
+  {
+   "scene": "slave",
+   "q": ["一帧在回程上经过 J1。J1 的处理单元会再读写它一次吗？", "A frame passes J1 on its way back. Does J1's processing unit read or write it again?"],
+   "a": ["不会。从口 1 进来的帧不经过处理单元，直接从口 0 转发出去。每个从站只在去程上处理一次。", "No. A frame coming in at port 1 skips the processing unit and is forwarded straight out of port 0. Each slave works on a frame once, on the way out."],
+   "why": ["ESC 数据手册（第 I 部分，3.2 节，表 10）：两个口的芯片，处理顺序是 0 → 处理单元 → 1，以及 1 → 0。", "ESC datasheet (Section I, 3.2, Table 10): for two ports the order is 0 → processing unit → 1, and 1 → 0."],
+   "reasoned": true
+  },
+  {
+   "scene": "cut",
+   "q": ["把 J1 和 J2 之间的网线剪断。主站能找到几个从站？帧在哪里掉头？一趟要多久？", "Cut the cable between J1 and J2. How many slaves does the master find? Where does the frame turn round? How long is the trip?"],
+   "a": ["2 个从站。J1 的口 1 失去链路自动关闭，帧在 J1 掉头。一趟 905 纳秒（完整时是 1485 纳秒）。", "2 slaves. J1's port 1 loses its link and closes by itself, so the frame turns round in J1. The trip takes 905 ns (1485 ns intact)."],
+   "why": ["真实运行：VWIRE_BREAK=2 时 SOEM 的扫描输出是 2 个从站，ports 为 11 / 10。延迟同样是模拟值。", "Real run: with VWIRE_BREAK=2, SOEM's scan reports 2 slaves with ports 11 / 10. The delays are simulated, as before."],
+   "run": "episodes/ep02-one-cable-ring/data/runs.sh"
+  },
+  {
+   "scene": "soem",
+   "q": ["SOEM 从 J2 读回寄存器 0x0110 = 0x5611。口 1 的两位是什么？SOEM 会认为口 1 打开吗？", "SOEM reads back register 0x0110 = 0x5611 from J2. What are port 1's two bits? Does SOEM count port 1 as open?"],
+   "a": ["第 11、10 位是 01：关闭。SOEM 检查 (topology & 0x0c00) == 0x0800，不成立，所以口 1 不记入 activeports，扫描输出显示 10。", "Bits 11 and 10 are 01: closed. SOEM tests (topology & 0x0c00) == 0x0800, which fails, so port 1 is left out of activeports and the scan shows 10."],
+   "why": ["0x5611 的第 11:10 位：0x5611 >> 10 = 0x15，& 3 = 1，即 01。10 才表示打开且已通信。", "Bits 11:10 of 0x5611: 0x5611 >> 10 = 0x15, and & 3 = 1, that is 01. Only 10 means open and communicating."],
+   "src": ["soem/src/ec_config.c:279", "soem/src/ec_config.c:288", "soem/src/ec_config.c:307"],
+   "run": "episodes/ep02-one-cable-ring/data/runs.sh"
+  },
+  {
+   "scene": "yourturn",
+   "q": ["一条总线有 5 个从站，从站 3 后面的网线断了。主站能找到几个从站？哪个口会关闭？", "A line has 5 slaves and the cable after slave 3 is cut. How many slaves does the master find? Which port closes?"],
+   "a": ["3 个从站。从站 3 的口 1 关闭，帧在那里掉头；从站 4、5 收不到帧。", "3 slaves. Slave 3's port 1 closes and the frame turns round there; slaves 4 and 5 get no frames."],
+   "why": ["和剪断 J1 后面网线是同一条规则：没有链路的口自动关闭，帧交给下一个口（两个口的芯片里就是口 0）。", "The same rule as cutting after J1: a port with no link closes by itself, and the frame goes to the next port (port 0 in a two-port chip)."],
+   "reasoned": true
+  }
+ ]
+}

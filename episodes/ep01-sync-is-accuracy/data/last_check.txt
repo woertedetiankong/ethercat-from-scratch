@@ -1,0 +1,14 @@
+ok   about 2,500 cycles measured
+ok   frame: spread is tens of microseconds, every run
+ok   frame: some cycles hundreds of us early or late
+ok   frame: a cycle 0.2 ms late exists
+ok   frame: J1 to J2 310 ns, every cycle
+ok   dc: period spread about 5 ns, every run
+ok   dc: settled J1/J2 within about 10 ns
+ok   about ten thousand times tighter (9434x)
+frame run 0: period 1000.003 us  sd 51156.2 ns  min 773.0 us  max 1245.0 us  J1->J2 skew mean 310.0 max 310.0 ns   (settling: sd 47111.6 ns, skew max 310 ns)
+frame run 1: period 1000.001 us  sd 62512.4 ns  min 10.0 us  max 2691.0 us  J1->J2 skew mean 310.0 max 310.0 ns   (settling: sd 30686.7 ns, skew max 310 ns)
+frame run 2: period 1000.002 us  sd 43761.4 ns  min 787.0 us  max 1253.0 us  J1->J2 skew mean 310.0 max 310.0 ns   (settling: sd 35128.2 ns, skew max 310 ns)
+dc run 0: period 999.982 us  sd 4.6 ns  min 1000.0 us  max 1000.0 us  J1->J2 skew mean -5.3 max 110.0 ns   (settling: sd 5.0 ns, skew max 2513 ns)
+dc run 1: period 999.982 us  sd 4.6 ns  min 1000.0 us  max 1000.0 us  J1->J2 skew mean -5.2 max 112.0 ns   (settling: sd 5.0 ns, skew max 2514 ns)
+dc run 2: period 999.982 us  sd 4.4 ns  min 1000.0 us  max 1000.0 us  J1->J2 skew mean -5.2 max 112.0 ns   (settling: sd 5.0 ns, skew max 2515 ns)

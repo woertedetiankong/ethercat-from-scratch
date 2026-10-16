@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>练功房</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%223%22 y=%223%22 width=%2226%22 height=%2226%22 rx=%226%22 fill=%22%23EEF0FF%22 stroke=%22%234F46E5%22 stroke-width=%223%22/%3E%3Cpath d=%22M10 17l4 4 8-10%22 fill=%22none%22 stroke=%22%234F46E5%22 stroke-width=%223.5%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <a class="home" href="./" data-en="← Course home">← 课程首页</a>
+    <b class="hl" id="dojoTitle">练功房</b>
+    <span class="scrawl" id="dojoSub"></span>
+  </div>
+  <div class="runner" id="runner"><span class="dot"></span><span id="runnerText" data-en="Connecting to the local runner…">正在连接本地运行器…</span></div>
+  <nav class="levels" id="levels" aria-label="关卡" data-en-label="Levels"></nav>
+</header>
+
+<main class="desk" id="desk">
+  <aside class="col lesson-col">
+    <article class="card lesson" id="lesson"></article>
+    <section class="sticky" id="hints" aria-label="提示" data-en-label="Hints"></section>
+  </aside>
+
+  <section class="col editor-col">
+    <div class="card editor-card">
+      <div class="tabs" id="tabs" role="tablist" aria-label="文件" data-en-label="Files"></div>
+      <div class="editor-wrap"><textarea id="code" aria-label="代码" data-en-label="Code"></textarea></div>
+      <div class="editor-foot">
+        <span class="saved" id="saved"></span>
+        <button class="btn run" id="run" type="button"><span data-en="Run tests">运行测试</span> <kbd>⌘↵</kbd></button>
+      </div>
+      <p class="pen-note" id="penNote" hidden></p>
+    </div>
+  </section>
+
+  <section class="col results-col">
+    <div class="card results" id="results"></div>
+    <div class="card timeline" id="timeline"></div>
+  </section>
+</main>
+
+<div class="gate" id="gate" hidden>
+  <div class="card">
+    <h1 id="gateH" data-en="Open this from the course home">请从课程首页进入</h1>
+    <p id="gateP" data-en="Run npm start in the course&#39;s site folder, open the link it prints, then enter the dojo from the course home. The link carries a one-time token that stops other web pages from using the runner on your computer.">在课程的 site 目录下运行 <code>npm start</code>，打开它打印出来的链接，再从课程首页进入练功房。链接里带着一次性的口令，用来防止其他网页偷偷调用你电脑上的运行器。</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/simple.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="js/i18n.js"></script>
+<script>
+// Load this dojo's levels (js/dojos/<id>.js), its English overlay (<id>.en.js, optional), then the shared workbench.
+(() => {
+  const id = new URLSearchParams(location.search).get('d') || '';
+  const add = src => new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.body.append(s); });
+  if (!/^[a-z][a-z0-9_]*$/.test(id)){ document.getElementById('gate').hidden = false; document.getElementById('gateH').textContent = L('没有指定练功房', 'No dojo given'); return; }
+  add(`js/dojos/${id}.js`).then(() => LANG === 'en' ? add(`js/dojos/${id}.en.js`).catch(() => {}) : null).then(() => add('js/app.js')).catch(() => { document.getElementById('gate').hidden = false; document.getElementById('gateH').textContent = L(`找不到练功房 ${id}`, `No dojo called ${id}`); document.getElementById('gateP').textContent = L(`需要 web/js/dojos/${id}.js 和 course/dojos/${id}/。`, `It needs web/js/dojos/${id}.js and course/dojos/${id}/.`); });
+})();
+</script>
+</body>
+</html>

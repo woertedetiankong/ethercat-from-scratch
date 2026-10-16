@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EtherCAT 从零读懂</title>
+<meta name="description" content="用 SOEM 和一条虚拟总线，看懂机器人关节的通信与同步：每一集按 看视频、读材料、玩实验台、练功房写代码、做真正的作业 五步走。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%223%22 y=%223%22 width=%2226%22 height=%2226%22 rx=%226%22 fill=%22%23EEF0FF%22 stroke=%22%234F46E5%22 stroke-width=%223%22/%3E%3Cpath d=%22M10 17l4 4 8-10%22 fill=%22none%22 stroke=%22%234F46E5%22 stroke-width=%223.5%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/hub.css">
+</head>
+<body class="hub-body">
+<header class="hub-top">
+  <div class="brand"><b id="brand"></b><span class="scrawl" id="sub"></span></div>
+  <div class="runner" id="runner"><span class="dot"></span><span id="runnerText" data-en="Connecting to the local runner…">正在连接本地运行器…</span></div>
+</header>
+
+<main class="hub">
+  <section class="ep-head card" id="epHead" aria-live="polite"></section>
+  <section class="steps" id="steps" aria-label="学习步骤" data-en-label="Steps"></section>
+
+  <section aria-labelledby="mapH">
+    <div class="sec-h"><h2 id="mapH" data-en="Course map">课程地图</h2><p id="mapNote"></p></div>
+    <div class="map" id="map"></div>
+  </section>
+
+  <footer class="hub-foot"><p id="foot"></p></footer>
+</main>
+
+<script src="js/i18n.js"></script>
+<script src="js/course.js"></script>
+<script src="js/course.en.js"></script>
+<script src="js/hub.js"></script>
+</body>
+</html>

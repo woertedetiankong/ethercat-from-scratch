@@ -1,0 +1,497 @@
+{
+ "total": 496.72,
+ "scenes": [
+  {
+   "id": "intro",
+   "title": "Where is the ring?",
+   "zh": "环在哪里？",
+   "start": 0.0,
+   "dur": 30.685,
+   "beats": [
+    {
+     "text": "Last episode: one frame passed J1, then J2, 310 ns apart.",
+     "zh": "上一集：同一帧先经过 J1，再经过 J2，相差 310 纳秒。",
+     "start": 0.9,
+     "dur": 5.383
+    },
+    {
+     "text": "People say EtherCAT is a ring: the frame goes round and comes back.",
+     "zh": "大家都说 EtherCAT 是一个环：帧绕一圈再回来。",
+     "start": 6.883,
+     "dur": 6.252
+    },
+    {
+     "text": "But look at our line. One cable from the master, slave to slave, and the last one goes nowhere.",
+     "zh": "可看看我们的总线：一根网线从主站出发，一个接一个，最后一个从站后面什么也没接。",
+     "start": 13.735,
+     "dur": 8.933
+    },
+    {
+     "text": "That is a line, not a ring. So where is the ring?",
+     "zh": "这是一条线，不是环。那环在哪里？",
+     "start": 23.268,
+     "dur": 5.817
+    }
+   ]
+  },
+  {
+   "id": "cable",
+   "title": "Inside the cable",
+   "zh": "网线里面",
+   "start": 30.685,
+   "dur": 37.031,
+   "beats": [
+    {
+     "text": "Open an Ethernet cable: eight wires, twisted into four pairs.",
+     "zh": "剥开一根网线：8 根线，两两绞成 4 对。",
+     "start": 0.9,
+     "dur": 4.948
+    },
+    {
+     "text": "EtherCAT runs at 100 Mbit/s, and that speed uses only two of the pairs.",
+     "zh": "EtherCAT 跑 100 Mbit/s，这个速率只用其中 2 对。",
+     "start": 6.448,
+     "dur": 6.687
+    },
+    {
+     "text": "Pins 1 and 2: one pair that sends. Pins 3 and 6: one pair that receives.",
+     "zh": "1、2 脚是一对，负责发；3、6 脚是一对，负责收。",
+     "start": 13.735,
+     "dur": 7.557
+    },
+    {
+     "text": "Both pairs work at the same time. This is called full duplex.",
+     "zh": "两对同时工作，这叫全双工。",
+     "start": 21.892,
+     "dur": 5.817
+    },
+    {
+     "text": "Like a road with two lanes: traffic goes both ways at once, and never meets.",
+     "zh": "就像一条双车道的路：两个方向同时通车，互不相撞。",
+     "start": 28.309,
+     "dur": 7.122
+    }
+   ]
+  },
+  {
+   "id": "lanes",
+   "title": "Every link is two lanes",
+   "zh": "每一段都是两条车道",
+   "start": 67.716,
+   "dur": 28.698,
+   "beats": [
+    {
+     "text": "Now draw our line that way: every cable becomes two lanes.",
+     "zh": "按这个样子重画我们的总线：每根网线都变成两条车道。",
+     "start": 0.9,
+     "dur": 6.076
+    },
+    {
+     "text": "The lane away from the master we call outgoing. The lane back we call return.",
+     "zh": "离开主站的那条叫去程，回主站的那条叫回程。",
+     "start": 7.576,
+     "dur": 7.122
+    },
+    {
+     "text": "Three cables, so three outgoing lanes and three return lanes.",
+     "zh": "三根网线，就有三条去程、三条回程。",
+     "start": 15.298,
+     "dur": 4.948
+    },
+    {
+     "text": "The question is now: what happens inside each slave, where the lanes meet?",
+     "zh": "问题变成了：车道在每个从站里汇合，那里发生了什么？",
+     "start": 20.846,
+     "dur": 6.252
+    }
+   ]
+  },
+  {
+   "id": "slave",
+   "title": "Inside a slave",
+   "zh": "从站里面",
+   "start": 96.414,
+   "dur": 49.101,
+   "beats": [
+    {
+     "text": "Every slave has a chip for EtherCAT, the ESC: EtherCAT Slave Controller.",
+     "zh": "每个从站里有一颗专管 EtherCAT 的芯片，叫 ESC（EtherCAT 从站控制器）。",
+     "start": 0.9,
+     "dur": 5.817
+    },
+    {
+     "text": "Our ESCs have two ports. Port 0 faces the master: IN. Port 1 faces away: OUT.",
+     "zh": "我们的 ESC 有两个口。口 0 朝着主站，标 IN；口 1 背着主站，标 OUT。",
+     "start": 7.317,
+     "dur": 7.557
+    },
+    {
+     "text": "A frame arriving at port 0 goes through the processing unit, then out of port 1.",
+     "zh": "从口 0 进来的帧，先经过处理单元，再从口 1 出去。",
+     "start": 15.474,
+     "dur": 7.557
+    },
+    {
+     "text": "The processing unit reads and writes this slave's data in the frame, as it passes.",
+     "zh": "处理单元就在帧经过时，读写帧里属于这个从站的数据。",
+     "start": 23.631,
+     "dur": 7.122
+    },
+    {
+     "text": "A frame arriving at port 1 skips it, and goes straight out of port 0.",
+     "zh": "从口 1 进来的帧不经过它，直接从口 0 出去。",
+     "start": 31.353,
+     "dur": 7.122
+    },
+    {
+     "text": "So each slave works on the frame once, on the way out. The return trip is just forwarding.",
+     "zh": "所以每个从站只在去程上处理一次这一帧，回程只是转发。",
+     "start": 39.075,
+     "dur": 8.426
+    }
+   ]
+  },
+  {
+   "id": "turn",
+   "title": "Turning around at a closed port",
+   "zh": "在关闭的口掉头",
+   "start": 145.515,
+   "dur": 45.187,
+   "beats": [
+    {
+     "text": "Now the last slave, J2. Nothing is plugged into its port 1.",
+     "zh": "再看最后一个从站 J2：它的口 1 上什么也没插。",
+     "start": 0.9,
+     "dur": 5.817
+    },
+    {
+     "text": "No cable means no link. The ESC sees that and closes the port.",
+     "zh": "没插线就没有链路。ESC 发现了，就把这个口关掉。",
+     "start": 7.317,
+     "dur": 6.252
+    },
+    {
+     "text": "A closed port does not send. The frame is passed inside the chip to the next port instead.",
+     "zh": "关闭的口不往外发，帧在芯片内部直接交给下一个口。",
+     "start": 14.169,
+     "dur": 8.426
+    },
+    {
+     "text": "For two ports, the next port after 1 is port 0. So the frame turns around and heads home.",
+     "zh": "两个口的芯片，口 1 的下一个就是口 0。于是帧掉头，往回走。",
+     "start": 23.195,
+     "dur": 8.861
+    },
+    {
+     "text": "Like a dead-end street with a turning circle at the end.",
+     "zh": "就像一条死胡同，尽头有个掉头的圆环。",
+     "start": 32.656,
+     "dur": 5.383
+    },
+    {
+     "text": "Nobody configured this. It happens because the cable is missing.",
+     "zh": "这不需要谁去配置：没插线，它就自动发生。",
+     "start": 38.639,
+     "dur": 4.948
+    }
+   ]
+  },
+  {
+   "id": "trip",
+   "title": "One frame's trip",
+   "zh": "一帧的行程",
+   "start": 190.702,
+   "dur": 74.16,
+   "beats": [
+    {
+     "text": "Now follow one frame from the master, with a stopwatch.",
+     "zh": "现在拿着秒表，跟着一帧从主站出发。",
+     "start": 0.9,
+     "dur": 4.948
+    },
+    {
+     "text": "Guess first: how long until its first bit is back at the master?",
+     "zh": "先猜：它的第一个比特要多久才回到主站？",
+     "start": 6.448,
+     "dur": 8.252
+    },
+    {
+     "text": "10 ns: it reaches slave 1. 2 m of cable at a simulated 5 ns per metre.",
+     "zh": "10 纳秒：到达从站 1。2 米网线，模拟的每米 5 纳秒。",
+     "start": 15.3,
+     "dur": 7.991
+    },
+    {
+     "text": "320 ns: it reaches J1. 630 ns: it reaches J2.",
+     "zh": "320 纳秒到 J1，630 纳秒到 J2。",
+     "start": 23.891,
+     "dur": 4.948
+    },
+    {
+     "text": "Each slave on the way out adds 305 ns, the ET1100 datasheet's average through the processing unit.",
+     "zh": "去程上每个从站添 305 纳秒：ET1100 数据手册里经过处理单元的平均值。",
+     "start": 29.439,
+     "dur": 7.991
+    },
+    {
+     "text": "935 ns: it leaves J2 again, turned around.",
+     "zh": "935 纳秒：掉过头，又从 J2 出来。",
+     "start": 38.03,
+     "dur": 4.078
+    },
+    {
+     "text": "On the way back each slave adds 265 ns: forwarding alongside the unit is a little quicker.",
+     "zh": "回程每个从站添 265 纳秒：从旁边转发，稍快一点。",
+     "start": 42.708,
+     "dur": 7.991
+    },
+    {
+     "text": "1205 ns: it leaves J1. 1475 ns: it leaves slave 1.",
+     "zh": "1205 纳秒离开 J1，1475 纳秒离开从站 1。",
+     "start": 51.299,
+     "dur": 5.383
+    },
+    {
+     "text": "1485 ns: back at the master. About 1.5 µs for the whole trip.",
+     "zh": "1485 纳秒：回到主站。整趟约 1.5 微秒。",
+     "start": 57.282,
+     "dur": 6.252
+    },
+    {
+     "text": "The cable and chip delays are simulated. The path the frame takes is what the chip's rules say.",
+     "zh": "网线和芯片延迟是模拟的；帧走哪条路，是芯片规则决定的。",
+     "start": 64.134,
+     "dur": 8.426
+    }
+   ]
+  },
+  {
+   "id": "ring",
+   "title": "So it is a ring",
+   "zh": "所以这是一个环",
+   "start": 264.862,
+   "dur": 37.28,
+   "beats": [
+    {
+     "text": "Now look at the path: out on every outgoing lane, back on every return lane.",
+     "zh": "现在看这条路径：去程走遍每一条去程车道，回程走遍每一条回程车道。",
+     "start": 0.9,
+     "dur": 7.505
+    },
+    {
+     "text": "It never doubles back halfway, and no lane is used twice.",
+     "zh": "中途不折返，也没有哪条车道走两次。",
+     "start": 9.005,
+     "dur": 5.383
+    },
+    {
+     "text": "That is a ring. It is just folded inside the cables.",
+     "zh": "这就是一个环，只不过折叠在网线里面。",
+     "start": 14.988,
+     "dur": 5.383
+    },
+    {
+     "text": "The master needs one Ethernet port: it sends on one pair and receives on the other.",
+     "zh": "主站只需要一个网口：一对线发，另一对线收。",
+     "start": 20.971,
+     "dur": 7.557
+    },
+    {
+     "text": "And every frame visits every slave, in the same order, every time.",
+     "zh": "而且每一帧都按同样的顺序经过每一个从站，每一次都一样。",
+     "start": 29.128,
+     "dur": 6.552
+    }
+   ]
+  },
+  {
+   "id": "cut",
+   "title": "Cut the cable",
+   "zh": "剪断网线",
+   "start": 302.142,
+   "dur": 43.275,
+   "beats": [
+    {
+     "text": "Now cut the cable between J1 and J2.",
+     "zh": "现在把 J1 和 J2 之间的网线剪断。",
+     "start": 0.9,
+     "dur": 4.078
+    },
+    {
+     "text": "Guess: how many slaves will the master find? And where does the frame turn around?",
+     "zh": "猜一猜：主站会找到几个从站？帧在哪里掉头？",
+     "start": 5.578,
+     "dur": 9.122
+    },
+    {
+     "text": "J1's port 1 loses its link, so it closes. The frame now turns at J1.",
+     "zh": "J1 的口 1 失去链路，于是关闭。帧现在在 J1 掉头。",
+     "start": 15.3,
+     "dur": 7.122
+    },
+    {
+     "text": "The master finds 2 slaves. J2 may still be powered, but no frame reaches it.",
+     "zh": "主站找到 2 个从站。J2 也许还通着电，但没有帧能到它那里。",
+     "start": 23.022,
+     "dur": 7.122
+    },
+    {
+     "text": "The trip is shorter: 905 ns instead of 1485 ns.",
+     "zh": "行程变短：905 纳秒，而不是 1485 纳秒。",
+     "start": 30.744,
+     "dur": 4.948
+    },
+    {
+     "text": "Nothing crashed, and nothing needed reconfiguring. The ring just got shorter.",
+     "zh": "没有崩溃，也不用重新配置：环只是变短了。",
+     "start": 36.292,
+     "dur": 5.383
+    }
+   ]
+  },
+  {
+   "id": "soem",
+   "title": "How SOEM sees it",
+   "zh": "SOEM 怎么看到的",
+   "start": 345.417,
+   "dur": 63.343,
+   "beats": [
+    {
+     "text": "How does the master know? Two small pieces of SOEM.",
+     "zh": "主站怎么知道的？SOEM 里有两小段代码。",
+     "start": 0.9,
+     "dur": 4.948
+    },
+    {
+     "text": "First it counts: one broadcast read, and every slave it passes adds 1 to a counter in the frame.",
+     "zh": "先数人数：发一个广播读，每经过一个从站，帧里的计数器就加 1。",
+     "start": 6.448,
+     "dur": 8.861
+    },
+    {
+     "text": "The counter comes back as 3, or as 2 after the cut. Episode 3 says more about this counter.",
+     "zh": "计数器回来是 3，剪断后是 2。这个计数器第 3 集还会细讲。",
+     "start": 15.909,
+     "dur": 8.861
+    },
+    {
+     "text": "Then it asks each slave for register 0x0110, DL Status: the state of its ports.",
+     "zh": "然后逐个读从站的寄存器 0x0110，DL 状态，也就是各个口的状态。",
+     "start": 25.37,
+     "dur": 7.122
+    },
+    {
+     "text": "Two bits per port. Pattern 10 means: open, and communication established with the neighbour.",
+     "zh": "每个口两位。10 这个组合的意思是：打开了，而且和邻居建立了通信。",
+     "start": 33.092,
+     "dur": 6.79
+    },
+    {
+     "text": "SOEM tests each port in turn, and remembers the open ones.",
+     "zh": "SOEM 挨个检查每个口，把打开的口记下来。",
+     "start": 40.482,
+     "dur": 5.383
+    },
+    {
+     "text": "Intact line: slave 1 and J1 show both ports open, J2 only port 0.",
+     "zh": "完整的总线：从站 1 和 J1 两个口都开，J2 只开口 0。",
+     "start": 46.465,
+     "dur": 6.687
+    },
+    {
+     "text": "After the cut, J1 shows only port 0. The open ports tell SOEM where the line ends.",
+     "zh": "剪断后，J1 也只剩口 0 开着。哪些口开着，就告诉了 SOEM 总线在哪里结束。",
+     "start": 53.752,
+     "dur": 7.991
+    }
+   ]
+  },
+  {
+   "id": "tree",
+   "title": "More than two ports",
+   "zh": "不止两个口",
+   "start": 408.76,
+   "dur": 20.387,
+   "beats": [
+    {
+     "text": "Some slaves have 3 or 4 ports, so the cable can branch.",
+     "zh": "有些从站有 3 个或 4 个口，网线就能分叉。",
+     "start": 0.9,
+     "dur": 5.817
+    },
+    {
+     "text": "Same rule: each port hands the frame to the next. It walks every branch in turn, then comes home: a tree is still one ring.",
+     "zh": "还是同一条规则：每个口把帧交给下一个口。帧把每条支路挨个走完再回家：树形也还是一个环。",
+     "start": 7.317,
+     "dur": 11.47
+    }
+   ]
+  },
+  {
+   "id": "recap",
+   "title": "Recap",
+   "zh": "本集要点",
+   "start": 429.147,
+   "dur": 28.108,
+   "beats": [
+    {
+     "text": "One: every cable is two lanes, one pair each way, both at once.",
+     "zh": "一、每根网线都是两条车道：一对线一个方向，同时工作。",
+     "start": 0.9,
+     "dur": 6.252
+    },
+    {
+     "text": "Two: the slave works on the frame on the way out. A port with no cable closes, and the frame turns around.",
+     "zh": "二、从站在去程上处理帧；没插线的口自动关闭，帧在那里掉头。",
+     "start": 7.752,
+     "dur": 10.165
+    },
+    {
+     "text": "Three: so a line of slaves is already a ring, and a cut only makes it shorter.",
+     "zh": "三、所以一串从站本身就是一个环；剪断只会让环变短。",
+     "start": 18.517,
+     "dur": 7.991
+    }
+   ]
+  },
+  {
+   "id": "yourturn",
+   "title": "Your turn",
+   "zh": "你来想",
+   "start": 457.255,
+   "dur": 39.465,
+   "beats": [
+    {
+     "text": "A line has 5 slaves. The cable after slave 3 is cut.",
+     "zh": "一条总线有 5 个从站，从站 3 后面的网线断了。",
+     "start": 0.9,
+     "dur": 5.817
+    },
+    {
+     "text": "How many slaves does the master find? Which port closes?",
+     "zh": "主站能找到几个从站？哪个口会关闭？",
+     "start": 7.317,
+     "dur": 6.948
+    },
+    {
+     "text": "3 slaves. Slave 3's port 1 closes, and the frame turns around there.",
+     "zh": "3 个从站。从站 3 的口 1 关闭，帧在那里掉头。",
+     "start": 14.865,
+     "dur": 6.252
+    },
+    {
+     "text": "Next: the frame is back after 1.5 µs. But even the shortest frame takes 5.8 µs to send.",
+     "zh": "下一集：帧 1.5 微秒就回来了，可最短的帧发出去也要 5.8 微秒。",
+     "start": 21.717,
+     "dur": 8.426
+    },
+    {
+     "text": "Its head is home before its tail has left. Episode 3: processing on the fly.",
+     "zh": "帧头回到了家，帧尾还没出门。第 3 集：边走边处理。",
+     "start": 30.743,
+     "dur": 7.122
+    }
+   ]
+  }
+ ]
+}

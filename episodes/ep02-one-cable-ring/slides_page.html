@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* 课件 / slides: written by slides.mjs (it inlines the data below). Same 中 / EN switch as the course site. */
+const EN = (() => { let l = null; try { l = localStorage.getItem('course.lang'); } catch {} if (l !== 'zh' && l !== 'en') l = /^zh\b/i.test(navigator.language || '') ? 'zh' : 'en'; return l === 'en'; })();
+const L = (zh, en) => EN ? en : zh;
+document.documentElement.lang = EN ? 'en' : 'zh-CN';
+const DATA = /*SLIDES*/null;
+const PRINT = location.search.includes('print');
+</script>
+<title>一根网线就是一个环 课件</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F2F2F0; --tile:#FFFFFF; --soft:#F5F5F3; --soft-2:#FAFAF9; --edge:#E4E4E1; --edge-2:#D6D6D2;
+  --ink:#141414; --ink-2:#3F3F46; --mute:#6E6E73; --faint:#A1A1A6;
+  --acc:#4F46E5; --acc-soft:#EEF0FF;
+  --f-sans:"Geist","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"Geist Mono","SFMono-Regular",Menlo,Consolas,"Noto Sans SC",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0B0B0C; --tile:#161618; --soft:#1D1D20; --soft-2:#1A1A1D; --edge:#26262A; --edge-2:#34343A;
+  --ink:#EDEDEF; --ink-2:#C9C9CF; --mute:#9A9AA2; --faint:#6B6B73; --acc:#8B85FF; --acc-soft:#22213A; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0B0B0C; --tile:#161618; --soft:#1D1D20; --soft-2:#1A1A1D; --edge:#26262A; --edge-2:#34343A;
+  --ink:#EDEDEF; --ink-2:#C9C9CF; --mute:#9A9AA2; --faint:#6B6B73; --acc:#8B85FF; --acc-soft:#22213A; color-scheme:dark; }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 var(--f-sans); -webkit-font-smoothing:antialiased; overflow-wrap:anywhere}  /* long identifiers (CURRENT_CTL_CONFIG_PWM_DUTY_CYCLE_MAX) must not widen the page at phone width */
+.wrap{max-width:1320px; margin:0 auto; padding-inline:20px; padding-block:36px 72px; display:flex; flex-direction:column; gap:28px}
+h1,h2,h3{margin:0; text-wrap:balance}
+p{margin:0}
+:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+a{color:inherit}
+
+.hero{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:28px 30px; display:flex; flex-direction:column; gap:12px}
+.hero-top{display:flex; align-items:center; gap:10px; margin-bottom:4px}
+.home{font:500 13px var(--f-sans); color:var(--mute); text-decoration:none; padding:6px 12px; border-radius:10px; background:var(--soft)}
+.home:hover{color:var(--ink)}
+.lang{margin-left:auto; display:inline-flex; padding:3px; gap:2px; border-radius:999px; background:var(--soft); border:0; cursor:pointer; font:600 12px/1 var(--f-mono); color:var(--mute)}
+.lang span{padding:5px 9px; border-radius:999px}
+.lang span.on{background:var(--ink); color:var(--bg)}
+.eyebrow{font:500 13px var(--f-mono); color:var(--acc)}
+h1{font-size:clamp(32px,4.4vw,52px); font-weight:600; letter-spacing:-.03em; line-height:1.08}
+.lead{color:var(--ink-2); max-width:62ch}
+.acts{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+.go{display:inline-flex; align-items:center; gap:6px; text-decoration:none; border-radius:12px; padding:9px 14px; font:500 14px var(--f-sans); background:var(--soft); color:var(--ink); border:0; cursor:pointer}
+.go:hover{background:var(--edge)}
+.go.main{background:var(--ink); color:var(--bg)}
+.num{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+
+.toc{position:sticky; top:0; z-index:2; display:flex; gap:6px; overflow-x:auto; padding:10px 0; background:var(--bg); scrollbar-width:thin}
+.toc a{flex:none; text-decoration:none; font:500 13px var(--f-sans); color:var(--ink-2); background:var(--tile); border:1px solid var(--edge); border-radius:999px; padding:6px 12px; white-space:nowrap}
+.toc a .num{color:var(--faint); margin-right:6px}
+.toc a.on{background:var(--acc-soft); box-shadow:inset 0 0 0 1.5px var(--acc); border-color:transparent; color:var(--ink)}
+
+.chap{display:flex; flex-direction:column; gap:14px; scroll-margin-top:64px}
+.chap > header{display:flex; align-items:baseline; gap:12px; padding:8px 4px 0}
+.chap > header .num{font-size:14px; color:var(--acc)}
+.chap > header h2{font-size:24px; font-weight:600; letter-spacing:-.02em}
+.chap > header small{color:var(--mute); font-size:14px}
+.slide{display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:0; background:var(--tile); border:1px solid var(--edge); border-radius:22px; overflow:hidden}
+.slide img{display:block; width:100%; aspect-ratio:16/9; background:#070b16; cursor:zoom-in}
+.notes{padding:20px 22px; display:flex; flex-direction:column; gap:12px}
+.notes .meta{display:flex; gap:10px; align-items:center; font:500 12px var(--f-mono); color:var(--faint)}
+.notes .meta a{color:var(--acc); text-decoration:none; background:var(--acc-soft); border-radius:8px; padding:3px 8px}
+.line .a{color:var(--ink); font-size:15.5px}
+.line .b{color:var(--mute); font-size:13.5px; margin-top:2px}
+.zoom{position:fixed; inset:0; z-index:9; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out}
+.zoom img{max-width:100%; max-height:100%; border-radius:8px}
+/* code index + practice: the two pages that close the 课件 */
+.extra{display:flex; flex-direction:column; gap:14px; scroll-margin-top:64px}
+.extra > header{display:flex; align-items:baseline; gap:12px; padding:8px 4px 0; flex-wrap:wrap}
+.extra > header h2{font-size:24px; font-weight:600; letter-spacing:-.02em}
+.extra > header small{color:var(--mute); font-size:14px}
+.tile{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:8px 0; overflow-x:auto}
+.cix{width:100%; border-collapse:collapse; font-size:14px}
+.cix th{text-align:left; font:500 12px var(--f-mono); color:var(--faint); padding:10px 14px; border-bottom:1px solid var(--edge)}
+.cix td{padding:10px 14px; border-bottom:1px solid var(--edge); vertical-align:top}
+.cix tr:last-child td{border-bottom:0}
+.cix .f{font-family:var(--f-mono); font-size:13px; color:var(--ink); word-break:break-all}
+.cix .f b{font-weight:600}
+.cix .fn{font-family:var(--f-mono); font-size:13px; color:var(--acc)}
+.cix .where{color:var(--ink-2)} .cix .where small{display:block; color:var(--mute); font-size:12.5px}
+.cix a{color:var(--acc); text-decoration:none; font-family:var(--f-mono); font-size:12.5px; background:var(--acc-soft); border-radius:8px; padding:2px 7px; white-space:nowrap; display:inline-block; margin:0 4px 4px 0}
+.qs{display:flex; flex-direction:column; gap:12px}
+.q{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:20px 22px; display:flex; flex-direction:column; gap:10px}
+.q .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font:500 12px var(--f-mono); color:var(--faint)}
+.chip{font:500 12px var(--f-sans); border-radius:999px; padding:3px 9px; background:var(--soft); color:var(--ink-2)}
+.chip.new{background:var(--acc-soft); color:var(--acc)}
+.chip.reasoned{background:transparent; box-shadow:inset 0 0 0 1px var(--edge-2); color:var(--mute)}
+.q .meta a{color:var(--acc); text-decoration:none; background:var(--acc-soft); border-radius:8px; padding:3px 8px}
+.q .ask{font-size:16px; color:var(--ink)} .q .ask small{display:block; color:var(--mute); font-size:13.5px; margin-top:2px}
+.q details{border-top:1px solid var(--edge); padding-top:10px}
+.q summary{cursor:pointer; font:500 14px var(--f-sans); color:var(--acc); list-style:none} .q summary::-webkit-details-marker{display:none}
+.q .ans{margin-top:8px; display:flex; flex-direction:column; gap:8px}
+.q .ans .a{color:var(--ink)} .q .ans .b{color:var(--mute); font-size:13.5px}
+.q .why{background:var(--soft); border-radius:14px; padding:10px 14px; font-size:14px; color:var(--ink-2)}
+.q .why .lab{font:500 12px var(--f-mono); color:var(--faint); display:block; margin-bottom:2px}
+.q code{font-family:var(--f-mono); font-size:12.5px; background:var(--soft-2); border:1px solid var(--edge); border-radius:6px; padding:1px 6px; word-break:break-all}
+@media (max-width:760px){ .slide{grid-template-columns:1fr} .hero{padding:22px 20px}
+  .cix thead{display:none} .cix tr{display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:6px; padding:12px 14px; border-bottom:1px solid var(--edge)}
+  .cix tr:last-child{border-bottom:0} .cix td{display:block; padding:0; border:0; grid-column:2} .cix td:first-child{grid-column:1; grid-row:1 / span 4}
+  .cix .fn{word-break:break-all; margin-top:2px} .cix .where{margin-top:4px} }
+
+/* Handout: one slide per A4 landscape page, notes in both languages (slides.mjs prints ?print to slides.pdf) */
+@page{size:A4 landscape; margin:10mm}
+@media print{
+  body{background:#fff; color:#141414}
+  .wrap{padding:0; gap:0; max-width:none}
+  .hero,.toc,.chap > header,.zoom,.meta a{display:none!important}
+  .chap{gap:0}
+  .slide{grid-template-columns:1fr; border:0; border-radius:0; break-after:page; break-inside:avoid; height:189mm; align-content:start}
+  .slide img{width:auto; height:auto; max-height:136mm; max-width:100%; margin:0 auto; border-radius:4px; cursor:auto}
+  .notes{padding:4mm 2mm 0; gap:5px}
+  .notes .meta{color:#6E6E73}
+  .line .a{font-size:11pt; color:#141414} .line .b{font-size:9.5pt; color:#3F3F46}
+  .extra{break-before:page; gap:4mm} .extra > header{display:flex!important; padding:0}
+  .tile,.q{border:1px solid #D6D6D2; border-radius:8px; break-inside:avoid; background:#fff} .tile{overflow:visible}
+  .cix{font-size:9pt} .cix td,.cix th{padding:4px 8px} .cix a{background:none; padding:0}
+  .q{padding:4mm 5mm; gap:2mm} .q summary{display:none} .q .why{background:#F5F5F3}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top"><a class="home" id="homeLink" href="../../index.html#ep02" hidden data-en="← Course home">← 课程首页</a><button class="lang" id="langBtn" type="button"></button></div>
+    <p class="eyebrow" data-en="EtherCAT from Scratch · Episode 2 · Slides">EtherCAT 从零读懂 · 第 2 集 · 课件</p>
+    <h1 data-en="One cable is already a ring">一根网线就是一个环</h1>
+    <p class="lead" id="lead"></p>
+    <div class="acts"><a class="go main" href="slides.pdf" download data-en="Download PDF">下载 PDF</a><button class="go" type="button" onclick="print()" data-en="Print">打印</button></div>
+  </header>
+  <nav class="toc" id="toc" aria-label="章节" data-en-label="Chapters"></nav>
+  <main id="chapters" style="display:flex; flex-direction:column; gap:36px"></main>
+  <section class="extra" id="code-index" hidden></section>
+  <section class="extra" id="practice" hidden></section>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+if (EN) document.querySelectorAll('[data-en]').forEach(e => e.innerHTML = e.dataset.en);
+if (EN) document.querySelectorAll('[data-en-label]').forEach(e => e.setAttribute('aria-label', e.dataset.enLabel));
+if (EN) document.title = $('h1').textContent + ' · Slides';  // read from the DOM: a title may contain quotes
+$('#langBtn').innerHTML = `<span class="${EN ? '' : 'on'}">中</span><span class="${EN ? 'on' : ''}">EN</span>`;
+$('#langBtn').addEventListener('click', () => { try { localStorage.setItem('course.lang', EN ? 'zh' : 'en'); } catch {} location.reload(); });
+// links back into the course site only work when served by it (not from the episode folder on file://)
+const SITE = location.protocol !== 'file:';
+$('#homeLink').hidden = !SITE;
+$('#lead').textContent = L(`视频的 ${DATA.slides.length} 张截图，按章节排好，每张旁边是那一段的讲解（${mmss(DATA.total)} 视频）。点图片看大图，点时间从那里开始播放视频。`,
+  `${DATA.slides.length} screenshots of the video, by chapter, each with the narration of that moment (${mmss(DATA.total)} of video). Click a picture to enlarge it, a time to play the video from there.`);
+const title = c => PRINT ? `${c.zh} · ${c.title}` : L(c.zh, c.title);
+const chaps = DATA.chapters.map(c => ({...c, slides: DATA.slides.filter(s => s.scene === c.id)})).filter(c => c.slides.length);
+$('#toc').innerHTML = chaps.map(c => `<a href="#c-${esc(c.id)}"><span class="num">${String(c.n).padStart(2, '0')}</span>${esc(title(c))}</a>`).join('');
+$('#chapters').innerHTML = chaps.map(c => `<section class="chap" id="c-${esc(c.id)}">
+  <header><span class="num">${String(c.n).padStart(2, '0')}</span><h2>${esc(title(c))}</h2><small>${esc(EN ? c.zh : c.title)}</small></header>
+  ${c.slides.map(s => `<article class="slide" id="s-${DATA.slides.indexOf(s) + 1}"><img src="${esc(s.img)}" alt="${esc(title(c))}" loading="${PRINT ? 'eager' : 'lazy'}">
+    <div class="notes"><div class="meta"><span class="num">${String(DATA.slides.indexOf(s) + 1).padStart(3, '0')} · ${esc(title(c))}</span>${SITE ? `<a class="num" href="../../index.html#ep02@${Math.floor(s.t)}">▶ ${mmss(s.t)}</a>` : `<span class="num">${mmss(s.t)}</span>`}</div>
+      ${s.lines.map(([en, zh]) => `<div class="line"><div class="a">${esc(EN ? en : zh)}</div><div class="b">${esc(EN ? zh : en)}</div></div>`).join('')}</div></article>`).join('')}
+</section>`).join('');
+// in print (the PDF) labels carry both languages, like the slide notes
+const L2 = (zh, en) => PRINT ? (zh && en ? `${zh} · ${en}` : zh || en) : L(zh, en);
+// code index: every code pane of the video, in order of appearance
+const chapOf = id => DATA.chapters.find(c => c.id === id);
+const play = t => SITE ? `<a href="../../index.html#ep02@${Math.floor(t)}">▶ ${mmss(t)}</a>` : `<span class="num">${mmss(t)}</span> `;
+if (DATA.code && DATA.code.length) {
+  const loc = c => { if (!c.file) return `<b>${esc(c.title)}</b>`; const i = c.file.lastIndexOf('/') + 1;
+    return `${esc(c.file.slice(0, i))}<b>${esc(c.file.slice(i))}</b>${c.a ? ` · L${c.a}${c.b && c.b !== c.a ? '–' + c.b : ''}` : ''}`; };
+  $('#code-index').hidden = false;
+  $('#code-index').innerHTML = `<header><h2>${L2('代码索引', 'Code index')}</h2><small>${L2(`视频里出现的 ${DATA.code.length} 段源码，按出场顺序。对着文件和行号打开源码，就是视频里那几行。`, `The ${DATA.code.length} source excerpts shown in the video, in order of appearance. Open the file at these lines and you see exactly what the video showed.`)}</small></header>
+  <div class="tile"><table class="cix"><thead><tr><th>#</th><th>${L2('文件 · 行', 'File · lines')}</th><th>${L2('函数', 'Function')}</th><th>${L2('出现在', 'Shown in')}</th><th>${L2('视频', 'Video')}</th></tr></thead><tbody>
+  ${DATA.code.map((c, i) => { const ch = chapOf(c.scene); return `<tr><td class="num">${i + 1}</td><td class="f">${loc(c)}</td><td class="fn">${esc(c.fn || '')}</td>
+    <td class="where">${esc(title(ch))}<small><a href="#s-${c.slide + 1}">${L2('课件', 'Slide')} ${String(c.slide + 1).padStart(3, '0')}</a></small></td>
+    <td>${[c.t, ...c.again].map(play).join('')}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+// practice: the video's guess-first questions plus new ones, each with its answer and what it rests on
+if (DATA.practice && DATA.practice.length) {
+  const two = ([zh, en]) => PRINT ? `<div class="a">${esc(zh)}</div><div class="b">${esc(en)}</div>` : `<div class="a">${esc(L(zh, en))}</div><div class="b">${esc(EN ? zh : en)}</div>`;
+  $('#practice').hidden = false;
+  $('#practice').innerHTML = `<header><h2>${L2('练习', 'Practice')}</h2><small>${L2('先自己答，再看答案。每个答案都写了依据：源码行，或者真实运行。', 'Answer first, then open the answer. Each one says what it rests on: source lines or a real run.')}</small></header>
+  <div class="qs">${DATA.practice.map((q, i) => `<article class="q">
+    <div class="meta"><span class="num">${L2(`第 ${i + 1} 题`, `Q${i + 1}`)}</span><span class="chip ${q.scene ? '' : 'new'}">${q.scene ? L2('视频里的题', 'From the video') : L2('新题', 'New')}</span>${q.reasoned ? `<span class="chip reasoned">${L2('按代码推演', 'Worked out from the code')}</span>` : ''}${q.scene && q.t != null ? play(q.t) : ''}</div>
+    <div class="ask">${PRINT ? `${esc(q.q[0])}<small>${esc(q.q[1])}</small>` : `${esc(L(q.q[0], q.q[1]))}<small>${esc(EN ? q.q[0] : q.q[1])}</small>`}</div>
+    <details${PRINT ? ' open' : ''}><summary>${L2('看答案', 'Show answer')}</summary><div class="ans">${two(q.a)}
+      <div class="why"><span class="lab">${L2('依据', 'Evidence')}</span>${esc(PRINT ? q.why[0] + ' / ' + q.why[1] : L(q.why[0], q.why[1]))}
+      ${(q.src || []).length ? `<div style="margin-top:6px">${q.src.map(x => `<code>${esc(x)}</code>`).join(' ')}</div>` : ''}${q.run ? `<div style="margin-top:6px"><code>${esc(q.run)}</code></div>` : ''}</div></div></details>
+  </article>`).join('')}</div>`;
+}
+$('#toc').insertAdjacentHTML('beforeend', (DATA.code && DATA.code.length ? `<a href="#code-index">${L('代码索引', 'Code index')}</a>` : '') + (DATA.practice && DATA.practice.length ? `<a href="#practice">${L('练习', 'Practice')}</a>` : ''));
+document.addEventListener('click', e => {
+  const img = e.target.closest('.slide img'); if (!img) return;
+  const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = `<img src="${img.src}" alt="">`; z.onclick = () => z.remove(); document.body.append(z);
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelector('.zoom')?.remove(); });
+// highlight the chapter being read
+const links = [...document.querySelectorAll('.toc a')];
+const io = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + x.target.id)); }), {rootMargin: '-20% 0px -70% 0px'});
+document.querySelectorAll('.chap, .extra').forEach(s => io.observe(s));
+</script>
+</body>
+</html>

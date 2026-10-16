@@ -1,0 +1,12 @@
+{
+	"name": "course-site",
+	"private": true,
+	"type": "module",
+	"description": "EtherCAT 从零读懂：本地运行器 / local runner",
+	"license": "MIT",
+	"engines": { "node": ">=22.19.0" },
+	"scripts": {
+		"start": "node server.ts",
+		"check": "node dev/check.ts"
+	}
+}

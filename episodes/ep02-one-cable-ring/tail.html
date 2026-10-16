@@ -1,0 +1,74 @@
+/* =========================================================
+   Chrome: chapter title, progress, subtitles
+   ========================================================= */
+var NOSUBS = location.search.includes('nosubs');
+function chrome(t, si, s, lt){
+  const n = TL.scenes.length;
+  if (si > 0 && si < n-1){
+    const a = eo(ramp(lt, .2, .8)) * (1 - ramp(lt, s.dur - .5, s.dur - .1));
+    text(String(si).padStart(2,'0'), 80, 88, {size:26, font:F.mono, weight:700, color:C.gold, align:'left', alpha:a});
+    text(s.title, 130, 88, {size:40, font:F.disp, weight:700, align:'left', alpha:a});
+    text(s.zh, 132, 132, {size:22, font:F.zh, weight:500, color:C.dim, align:'left', alpha:a});
+  }
+  // progress ticks
+  const bw = 34, gap = 8, x0 = W - 80 - n*bw - (n-1)*gap;
+  for (let i=0;i<n;i++){ const x = x0 + i*(bw+gap); rr(x, 84, bw, 5, 2.5); ctx.fillStyle = rgba(C.faint,.9); ctx.fill();
+    const f = i < si ? 1 : i > si ? 0 : clamp(lt/s.dur,0,1); if (f > 0){ rr(x, 84, bw*f, 5, 2.5); ctx.fillStyle = C.gold; ctx.fill(); } }
+  // subtitles (off with ?nosubs: slides.mjs puts the narration beside each slide instead)
+  const bt = !NOSUBS && s.beats.find(bb => lt >= bb.start - .05 && lt < bb.start + bb.dur + .35);
+  if (bt){
+    const a = ramp(lt, bt.start - .05, bt.start + .12) * (1 - ramp(lt, bt.start + bt.dur + .2, bt.start + bt.dur + .35));
+    const g = ctx.createLinearGradient(0, 840, 0, H); g.addColorStop(0,'rgba(7,11,22,0)'); g.addColorStop(1,'rgba(7,11,22,.85)'); ctx.fillStyle = g; ctx.fillRect(0, 840, W, H-840);
+    ctx.font = `500 38px ${F.sans}`; const lines = wrapLines(bt.text, 1500);
+    const zy = 1030, ly = zy - 52 - (lines.length-1)*50;
+    lines.forEach((l,i) => text(l, 960, ly + i*50, {size:38, weight:500, alpha:a, shadow:'rgba(0,0,0,.8)'}));
+    text(bt.zh, 960, zy, {size:27, font:F.zh, weight:500, color:'#B9C1D3', alpha:a});
+  }
+}
+
+/* =========================================================
+   render(t)
+   ========================================================= */
+var render = function(t){
+  ctx.setTransform(1,0,0,1,0,0);
+  background(t);
+  const sc = TL.scenes; let si = sc.findIndex(s => t >= s.start && t < s.start + s.dur); if (si < 0) si = t < 0 ? 0 : sc.length-1;
+  const s = sc[si], lt = t - s.start, b = s.beats.map(x => x.start);
+  const a = Math.min(ramp(lt, 0, .5), 1 - ramp(lt, s.dur - .45, s.dur));
+  ctx.save(); ctx.globalAlpha = a;
+  const z = 1 + .025*(1 - eo(ramp(lt, 0, 1.6))); ctx.translate(960,540); ctx.scale(z,z); ctx.translate(-960,-540);
+  SCN[s.id](lt, b, s.dur);
+  ctx.restore();
+  chrome(t, si, s, lt);
+  if (si === sc.length-1){ const k = ramp(lt, s.dur - 1.2, s.dur); if (k > 0){ ctx.fillStyle = `rgba(0,0,0,${k})`; ctx.fillRect(0,0,W,H); } }
+};
+
+
+var ready = (async () => {
+  const zh = TL.scenes.map(s => s.zh + s.beats.map(b => b.zh).join('')).join('');
+  try { await Promise.all([
+    document.fonts.load(`700 150px ${F.disp}`), document.fonts.load(`600 40px ${F.disp}`),
+    document.fonts.load(`500 38px ${F.sans}`), document.fonts.load(`600 38px ${F.sans}`),
+    document.fonts.load(`700 24px ${F.mono}`), document.fonts.load(`500 24px ${F.mono}`),
+    document.fonts.load(`500 27px ${F.zh}`, zh + EXTRA_ZH)]); await document.fonts.ready; } catch(e){}
+  return true;
+})();
+
+/* ---------- player ---------- */
+if (location.search.includes('record')){ document.body.classList.add('record'); ready.then(() => render(0)); }
+else {
+  const au = document.getElementById('au'), pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tm = document.getElementById('tm');
+  let playing = false, t0 = 0, base = 0, useAudio = true;
+  const now = () => playing ? (useAudio && !au.paused ? au.currentTime : base + (performance.now() - t0)/1000) : base;
+  const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  pp.onclick = () => {
+    if (playing){ base = now(); playing = false; au.pause(); pp.textContent = 'Play'; }
+    else { if (base >= TL.total) base = 0; playing = true; t0 = performance.now(); au.currentTime = base; au.play().catch(() => { useAudio = false; }); pp.textContent = 'Pause'; }
+  };
+  sc.oninput = () => { base = sc.value/1000*TL.total; t0 = performance.now(); au.currentTime = base; };
+  const loop = () => { let t = now(); if (t >= TL.total){ t = TL.total - .001; if (playing){ playing = false; base = TL.total; pp.textContent = 'Replay'; } } render(t); sc.value = Math.round(t/TL.total*1000); tm.textContent = `${fmt(t)} / ${fmt(TL.total)}`; requestAnimationFrame(loop); };
+  ready.then(() => { render(0); loop(); });
+}
+</script>
+</body>
+</html>

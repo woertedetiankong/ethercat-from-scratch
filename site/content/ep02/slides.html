@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* 课件 / slides: written by slides.mjs (it inlines the data below). Same 中 / EN switch as the course site. */
+const EN = (() => { let l = null; try { l = localStorage.getItem('course.lang'); } catch {} if (l !== 'zh' && l !== 'en') l = /^zh\b/i.test(navigator.language || '') ? 'zh' : 'en'; return l === 'en'; })();
+const L = (zh, en) => EN ? en : zh;
+document.documentElement.lang = EN ? 'en' : 'zh-CN';
+const DATA = {"total":496.72,"chapters":[{"id":"intro","n":0,"title":"Where is the ring?","zh":"环在哪里？","t":0},{"id":"cable","n":1,"title":"Inside the cable","zh":"网线里面","t":30.685},{"id":"lanes","n":2,"title":"Every link is two lanes","zh":"每一段都是两条车道","t":67.716},{"id":"slave","n":3,"title":"Inside a slave","zh":"从站里面","t":96.414},{"id":"turn","n":4,"title":"Turning around at a closed port","zh":"在关闭的口掉头","t":145.515},{"id":"trip","n":5,"title":"One frame's trip","zh":"一帧的行程","t":190.702},{"id":"ring","n":6,"title":"So it is a ring","zh":"所以这是一个环","t":264.862},{"id":"cut","n":7,"title":"Cut the cable","zh":"剪断网线","t":302.142},{"id":"soem","n":8,"title":"How SOEM sees it","zh":"SOEM 怎么看到的","t":345.417},{"id":"tree","n":9,"title":"More than two ports","zh":"不止两个口","t":408.76},{"id":"recap","n":10,"title":"Recap","zh":"本集要点","t":429.147},{"id":"yourturn","n":11,"title":"Your turn","zh":"你来想","t":457.255}],"slides":[{"scene":"intro","ch":0,"title":"Where is the ring?","zh":"环在哪里？","t":0.9,"lines":[["Last episode: one frame passed J1, then J2, 310 ns apart.","上一集：同一帧先经过 J1，再经过 J2，相差 310 纳秒。"],["People say EtherCAT is a ring: the frame goes round and comes back.","大家都说 EtherCAT 是一个环：帧绕一圈再回来。"]],"img":"slides/001.jpg"},{"scene":"intro","ch":0,"title":"Where is the ring?","zh":"环在哪里？","t":13.73,"lines":[["But look at our line. One cable from the master, slave to slave, and the last one goes nowhere.","可看看我们的总线：一根网线从主站出发，一个接一个，最后一个从站后面什么也没接。"]],"img":"slides/002.jpg"},{"scene":"intro","ch":0,"title":"Where is the ring?","zh":"环在哪里？","t":23.27,"lines":[["That is a line, not a ring. So where is the ring?","这是一条线，不是环。那环在哪里？"]],"img":"slides/003.jpg"},{"scene":"cable","ch":1,"title":"Inside the cable","zh":"网线里面","t":31.58,"lines":[["Open an Ethernet cable: eight wires, twisted into four pairs.","剥开一根网线：8 根线，两两绞成 4 对。"]],"img":"slides/004.jpg"},{"scene":"cable","ch":1,"title":"Inside the cable","zh":"网线里面","t":37.13,"lines":[["EtherCAT runs at 100 Mbit/s, and that speed uses only two of the pairs.","EtherCAT 跑 100 Mbit/s，这个速率只用其中 2 对。"]],"img":"slides/005.jpg"},{"scene":"cable","ch":1,"title":"Inside the cable","zh":"网线里面","t":44.42,"lines":[["Pins 1 and 2: one pair that sends. Pins 3 and 6: one pair that receives.","1、2 脚是一对，负责发；3、6 脚是一对，负责收。"]],"img":"slides/006.jpg"},{"scene":"cable","ch":1,"title":"Inside the cable","zh":"网线里面","t":52.58,"lines":[["Both pairs work at the same time. This is called full duplex.","两对同时工作，这叫全双工。"]],"img":"slides/007.jpg"},{"scene":"cable","ch":1,"title":"Inside the cable","zh":"网线里面","t":58.99,"lines":[["Like a road with two lanes: traffic goes both ways at once, and never meets.","就像一条双车道的路：两个方向同时通车，互不相撞。"]],"img":"slides/008.jpg"},{"scene":"lanes","ch":2,"title":"Every link is two lanes","zh":"每一段都是两条车道","t":68.62,"lines":[["Now draw our line that way: every cable becomes two lanes.","按这个样子重画我们的总线：每根网线都变成两条车道。"],["The lane away from the master we call outgoing. The lane back we call return.","离开主站的那条叫去程，回主站的那条叫回程。"],["Three cables, so three outgoing lanes and three return lanes.","三根网线，就有三条去程、三条回程。"]],"img":"slides/009.jpg"},{"scene":"lanes","ch":2,"title":"Every link is two lanes","zh":"每一段都是两条车道","t":88.56,"lines":[["The question is now: what happens inside each slave, where the lanes meet?","问题变成了：车道在每个从站里汇合，那里发生了什么？"]],"img":"slides/010.jpg"},{"scene":"slave","ch":3,"title":"Inside a slave","zh":"从站里面","t":97.31,"lines":[["Every slave has a chip for EtherCAT, the ESC: EtherCAT Slave Controller.","每个从站里有一颗专管 EtherCAT 的芯片，叫 ESC（EtherCAT 从站控制器）。"]],"img":"slides/011.jpg"},{"scene":"slave","ch":3,"title":"Inside a slave","zh":"从站里面","t":103.73,"lines":[["Our ESCs have two ports. Port 0 faces the master: IN. Port 1 faces away: OUT.","我们的 ESC 有两个口。口 0 朝着主站，标 IN；口 1 背着主站，标 OUT。"],["A frame arriving at port 0 goes through the processing unit, then out of port 1.","从口 0 进来的帧，先经过处理单元，再从口 1 出去。"],["The processing unit reads and writes this slave's data in the frame, as it passes.","处理单元就在帧经过时，读写帧里属于这个从站的数据。"]],"img":"slides/012.jpg"},{"scene":"slave","ch":3,"title":"Inside a slave","zh":"从站里面","t":127.77,"lines":[["A frame arriving at port 1 skips it, and goes straight out of port 0.","从口 1 进来的帧不经过它，直接从口 0 出去。"]],"img":"slides/013.jpg"},{"scene":"slave","ch":3,"title":"Inside a slave","zh":"从站里面","t":135.49,"lines":[["So each slave works on the frame once, on the way out. The return trip is just forwarding.","所以每个从站只在去程上处理一次这一帧，回程只是转发。"]],"img":"slides/014.jpg"},{"scene":"turn","ch":4,"title":"Turning around at a closed port","zh":"在关闭的口掉头","t":146.41,"lines":[["Now the last slave, J2. Nothing is plugged into its port 1.","再看最后一个从站 J2：它的口 1 上什么也没插。"],["No cable means no link. The ESC sees that and closes the port.","没插线就没有链路。ESC 发现了，就把这个口关掉。"],["A closed port does not send. The frame is passed inside the chip to the next port instead.","关闭的口不往外发，帧在芯片内部直接交给下一个口。"],["For two ports, the next port after 1 is port 0. So the frame turns around and heads home.","两个口的芯片，口 1 的下一个就是口 0。于是帧掉头，往回走。"]],"img":"slides/015.jpg"},{"scene":"turn","ch":4,"title":"Turning around at a closed port","zh":"在关闭的口掉头","t":178.17,"lines":[["Like a dead-end street with a turning circle at the end.","就像一条死胡同，尽头有个掉头的圆环。"]],"img":"slides/016.jpg"},{"scene":"turn","ch":4,"title":"Turning around at a closed port","zh":"在关闭的口掉头","t":184.15,"lines":[["Nobody configured this. It happens because the cable is missing.","这不需要谁去配置：没插线，它就自动发生。"]],"img":"slides/017.jpg"},{"scene":"trip","ch":5,"title":"One frame's trip","zh":"一帧的行程","t":191.6,"lines":[["Now follow one frame from the master, with a stopwatch.","现在拿着秒表，跟着一帧从主站出发。"],["Guess first: how long until its first bit is back at the master?","先猜：它的第一个比特要多久才回到主站？"]],"img":"slides/018.jpg"},{"scene":"trip","ch":5,"title":"One frame's trip","zh":"一帧的行程","t":206,"lines":[["10 ns: it reaches slave 1. 2 m of cable at a simulated 5 ns per metre.","10 纳秒：到达从站 1。2 米网线，模拟的每米 5 纳秒。"],["320 ns: it reaches J1. 630 ns: it reaches J2.","320 纳秒到 J1，630 纳秒到 J2。"],["Each slave on the way out adds 305 ns, the ET1100 datasheet's average through the processing unit.","去程上每个从站添 305 纳秒：ET1100 数据手册里经过处理单元的平均值。"],["935 ns: it leaves J2 again, turned around.","935 纳秒：掉过头，又从 J2 出来。"],["On the way back each slave adds 265 ns: forwarding alongside the unit is a little quicker.","回程每个从站添 265 纳秒：从旁边转发，稍快一点。"],["1205 ns: it leaves J1. 1475 ns: it leaves slave 1.","1205 纳秒离开 J1，1475 纳秒离开从站 1。"]],"img":"slides/019.jpg"},{"scene":"trip","ch":5,"title":"One frame's trip","zh":"一帧的行程","t":247.98,"lines":[["1485 ns: back at the master. About 1.5 µs for the whole trip.","1485 纳秒：回到主站。整趟约 1.5 微秒。"],["The cable and chip delays are simulated. The path the frame takes is what the chip's rules say.","网线和芯片延迟是模拟的；帧走哪条路，是芯片规则决定的。"]],"img":"slides/020.jpg"},{"scene":"ring","ch":6,"title":"So it is a ring","zh":"所以这是一个环","t":265.76,"lines":[["Now look at the path: out on every outgoing lane, back on every return lane.","现在看这条路径：去程走遍每一条去程车道，回程走遍每一条回程车道。"],["It never doubles back halfway, and no lane is used twice.","中途不折返，也没有哪条车道走两次。"]],"img":"slides/021.jpg"},{"scene":"ring","ch":6,"title":"So it is a ring","zh":"所以这是一个环","t":279.85,"lines":[["That is a ring. It is just folded inside the cables.","这就是一个环，只不过折叠在网线里面。"]],"img":"slides/022.jpg"},{"scene":"ring","ch":6,"title":"So it is a ring","zh":"所以这是一个环","t":285.83,"lines":[["The master needs one Ethernet port: it sends on one pair and receives on the other.","主站只需要一个网口：一对线发，另一对线收。"],["And every frame visits every slave, in the same order, every time.","而且每一帧都按同样的顺序经过每一个从站，每一次都一样。"]],"img":"slides/023.jpg"},{"scene":"cut","ch":7,"title":"Cut the cable","zh":"剪断网线","t":303.04,"lines":[["Now cut the cable between J1 and J2.","现在把 J1 和 J2 之间的网线剪断。"],["Guess: how many slaves will the master find? And where does the frame turn around?","猜一猜：主站会找到几个从站？帧在哪里掉头？"]],"img":"slides/024.jpg"},{"scene":"cut","ch":7,"title":"Cut the cable","zh":"剪断网线","t":317.44,"lines":[["J1's port 1 loses its link, so it closes. The frame now turns at J1.","J1 的口 1 失去链路，于是关闭。帧现在在 J1 掉头。"],["The master finds 2 slaves. J2 may still be powered, but no frame reaches it.","主站找到 2 个从站。J2 也许还通着电，但没有帧能到它那里。"],["The trip is shorter: 905 ns instead of 1485 ns.","行程变短：905 纳秒，而不是 1485 纳秒。"],["Nothing crashed, and nothing needed reconfiguring. The ring just got shorter.","没有崩溃，也不用重新配置：环只是变短了。"]],"img":"slides/025.jpg"},{"scene":"soem","ch":8,"title":"How SOEM sees it","zh":"SOEM 怎么看到的","t":346.32,"lines":[["How does the master know? Two small pieces of SOEM.","主站怎么知道的？SOEM 里有两小段代码。"],["First it counts: one broadcast read, and every slave it passes adds 1 to a counter in the frame.","先数人数：发一个广播读，每经过一个从站，帧里的计数器就加 1。"],["The counter comes back as 3, or as 2 after the cut. Episode 3 says more about this counter.","计数器回来是 3，剪断后是 2。这个计数器第 3 集还会细讲。"]],"img":"slides/026.jpg"},{"scene":"soem","ch":8,"title":"How SOEM sees it","zh":"SOEM 怎么看到的","t":370.79,"lines":[["Then it asks each slave for register 0x0110, DL Status: the state of its ports.","然后逐个读从站的寄存器 0x0110，DL 状态，也就是各个口的状态。"],["Two bits per port. Pattern 10 means: open, and communication established with the neighbour.","每个口两位。10 这个组合的意思是：打开了，而且和邻居建立了通信。"]],"img":"slides/027.jpg"},{"scene":"soem","ch":8,"title":"How SOEM sees it","zh":"SOEM 怎么看到的","t":385.9,"lines":[["SOEM tests each port in turn, and remembers the open ones.","SOEM 挨个检查每个口，把打开的口记下来。"]],"img":"slides/028.jpg"},{"scene":"soem","ch":8,"title":"How SOEM sees it","zh":"SOEM 怎么看到的","t":391.88,"lines":[["Intact line: slave 1 and J1 show both ports open, J2 only port 0.","完整的总线：从站 1 和 J1 两个口都开，J2 只开口 0。"],["After the cut, J1 shows only port 0. The open ports tell SOEM where the line ends.","剪断后，J1 也只剩口 0 开着。哪些口开着，就告诉了 SOEM 总线在哪里结束。"]],"img":"slides/029.jpg"},{"scene":"tree","ch":9,"title":"More than two ports","zh":"不止两个口","t":409.66,"lines":[["Some slaves have 3 or 4 ports, so the cable can branch.","有些从站有 3 个或 4 个口，网线就能分叉。"],["Same rule: each port hands the frame to the next. It walks every branch in turn, then comes home: a tree is still one ring.","还是同一条规则：每个口把帧交给下一个口。帧把每条支路挨个走完再回家：树形也还是一个环。"]],"img":"slides/030.jpg"},{"scene":"recap","ch":10,"title":"Recap","zh":"本集要点","t":430.05,"lines":[["One: every cable is two lanes, one pair each way, both at once.","一、每根网线都是两条车道：一对线一个方向，同时工作。"],["Two: the slave works on the frame on the way out. A port with no cable closes, and the frame turns around.","二、从站在去程上处理帧；没插线的口自动关闭，帧在那里掉头。"],["Three: so a line of slaves is already a ring, and a cut only makes it shorter.","三、所以一串从站本身就是一个环；剪断只会让环变短。"]],"img":"slides/031.jpg"},{"scene":"yourturn","ch":11,"title":"Your turn","zh":"你来想","t":458.15,"lines":[["A line has 5 slaves. The cable after slave 3 is cut.","一条总线有 5 个从站，从站 3 后面的网线断了。"],["How many slaves does the master find? Which port closes?","主站能找到几个从站？哪个口会关闭？"]],"img":"slides/032.jpg"},{"scene":"yourturn","ch":11,"title":"Your turn","zh":"你来想","t":472.12,"lines":[["3 slaves. Slave 3's port 1 closes, and the frame turns around there.","3 个从站。从站 3 的口 1 关闭，帧在那里掉头。"]],"img":"slides/033.jpg"},{"scene":"yourturn","ch":11,"title":"Your turn","zh":"你来想","t":478.97,"lines":[["Next: the frame is back after 1.5 µs. But even the shortest frame takes 5.8 µs to send.","下一集：帧 1.5 微秒就回来了，可最短的帧发出去也要 5.8 微秒。"],["Its head is home before its tail has left. Episode 3: processing on the fly.","帧头回到了家，帧尾还没出门。第 3 集：边走边处理。"]],"img":"slides/034.jpg"}],"code":[{"title":"soem/src/ec_config.c:72  ecx_detect_slaves","file":"soem/src/ec_config.c","a":72,"b":72,"t":352.25,"again":[],"fn":"","scene":"soem","slide":25},{"title":"soem/src/ec_config.c:279–292  ecx_config_init","file":"soem/src/ec_config.c","a":279,"b":292,"t":386.25,"again":[],"fn":"","scene":"soem","slide":27},{"title":"soem/src/ec_config.c:307","file":"soem/src/ec_config.c","a":307,"b":307,"t":389.25,"again":[],"fn":"","scene":"soem","slide":27}],"practice":[{"scene":"trip","q":["一帧从主站出发，经过从站 1、J1、J2 再回来。它的第一个比特要多久回到主站？","A frame leaves the master, passes slave 1, J1 and J2, and comes back. How long until its first bit is back at the master?"],"a":["1485 纳秒，约 1.5 微秒。去程 10 → 320 → 630 纳秒到达三个从站，在 J2 掉头，935 纳秒离开 J2，1205 离开 J1，1475 离开从站 1，1485 回到主站。","1485 ns, about 1.5 µs. Going out it reaches the three slaves at 10, 320 and 630 ns, turns round in J2, leaves J2 at 935, J1 at 1205, slave 1 at 1475, and is back at 1485."],"why":["真实运行里每一帧都走同样的路径（data.py 逐帧检查）。延迟是模拟的：网线每米 5 纳秒；芯片去程 305 纳秒、回程 265 纳秒，取自 ET1100 数据手册的平均值。","In the real run every frame takes the same path (data.py checks each one). The delays are simulated: 5 ns per metre of cable; 305 ns through the chip going out and 265 ns coming back, the ET1100 datasheet averages."],"run":"episodes/ep02-one-cable-ring/data/runs.sh","t":190.702},{"scene":"slave","q":["一帧在回程上经过 J1。J1 的处理单元会再读写它一次吗？","A frame passes J1 on its way back. Does J1's processing unit read or write it again?"],"a":["不会。从口 1 进来的帧不经过处理单元，直接从口 0 转发出去。每个从站只在去程上处理一次。","No. A frame coming in at port 1 skips the processing unit and is forwarded straight out of port 0. Each slave works on a frame once, on the way out."],"why":["ESC 数据手册（第 I 部分，3.2 节，表 10）：两个口的芯片，处理顺序是 0 → 处理单元 → 1，以及 1 → 0。","ESC datasheet (Section I, 3.2, Table 10): for two ports the order is 0 → processing unit → 1, and 1 → 0."],"reasoned":true,"t":96.414},{"scene":"cut","q":["把 J1 和 J2 之间的网线剪断。主站能找到几个从站？帧在哪里掉头？一趟要多久？","Cut the cable between J1 and J2. How many slaves does the master find? Where does the frame turn round? How long is the trip?"],"a":["2 个从站。J1 的口 1 失去链路自动关闭，帧在 J1 掉头。一趟 905 纳秒（完整时是 1485 纳秒）。","2 slaves. J1's port 1 loses its link and closes by itself, so the frame turns round in J1. The trip takes 905 ns (1485 ns intact)."],"why":["真实运行：VWIRE_BREAK=2 时 SOEM 的扫描输出是 2 个从站，ports 为 11 / 10。延迟同样是模拟值。","Real run: with VWIRE_BREAK=2, SOEM's scan reports 2 slaves with ports 11 / 10. The delays are simulated, as before."],"run":"episodes/ep02-one-cable-ring/data/runs.sh","t":302.142},{"scene":"soem","q":["SOEM 从 J2 读回寄存器 0x0110 = 0x5611。口 1 的两位是什么？SOEM 会认为口 1 打开吗？","SOEM reads back register 0x0110 = 0x5611 from J2. What are port 1's two bits? Does SOEM count port 1 as open?"],"a":["第 11、10 位是 01：关闭。SOEM 检查 (topology & 0x0c00) == 0x0800，不成立，所以口 1 不记入 activeports，扫描输出显示 10。","Bits 11 and 10 are 01: closed. SOEM tests (topology & 0x0c00) == 0x0800, which fails, so port 1 is left out of activeports and the scan shows 10."],"why":["0x5611 的第 11:10 位：0x5611 >> 10 = 0x15，& 3 = 1，即 01。10 才表示打开且已通信。","Bits 11:10 of 0x5611: 0x5611 >> 10 = 0x15, and & 3 = 1, that is 01. Only 10 means open and communicating."],"src":["soem/src/ec_config.c:279","soem/src/ec_config.c:288","soem/src/ec_config.c:307"],"run":"episodes/ep02-one-cable-ring/data/runs.sh","t":345.417},{"scene":"yourturn","q":["一条总线有 5 个从站，从站 3 后面的网线断了。主站能找到几个从站？哪个口会关闭？","A line has 5 slaves and the cable after slave 3 is cut. How many slaves does the master find? Which port closes?"],"a":["3 个从站。从站 3 的口 1 关闭，帧在那里掉头；从站 4、5 收不到帧。","3 slaves. Slave 3's port 1 closes and the frame turns round there; slaves 4 and 5 get no frames."],"why":["和剪断 J1 后面网线是同一条规则：没有链路的口自动关闭，帧交给下一个口（两个口的芯片里就是口 0）。","The same rule as cutting after J1: a port with no link closes by itself, and the frame goes to the next port (port 0 in a two-port chip)."],"reasoned":true,"t":457.255}]};
+const PRINT = location.search.includes('print');
+</script>
+<title>一根网线就是一个环 课件</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F2F2F0; --tile:#FFFFFF; --soft:#F5F5F3; --soft-2:#FAFAF9; --edge:#E4E4E1; --edge-2:#D6D6D2;
+  --ink:#141414; --ink-2:#3F3F46; --mute:#6E6E73; --faint:#A1A1A6;
+  --acc:#4F46E5; --acc-soft:#EEF0FF;
+  --f-sans:"Geist","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"Geist Mono","SFMono-Regular",Menlo,Consolas,"Noto Sans SC",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0B0B0C; --tile:#161618; --soft:#1D1D20; --soft-2:#1A1A1D; --edge:#26262A; --edge-2:#34343A;
+  --ink:#EDEDEF; --ink-2:#C9C9CF; --mute:#9A9AA2; --faint:#6B6B73; --acc:#8B85FF; --acc-soft:#22213A; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0B0B0C; --tile:#161618; --soft:#1D1D20; --soft-2:#1A1A1D; --edge:#26262A; --edge-2:#34343A;
+  --ink:#EDEDEF; --ink-2:#C9C9CF; --mute:#9A9AA2; --faint:#6B6B73; --acc:#8B85FF; --acc-soft:#22213A; color-scheme:dark; }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 var(--f-sans); -webkit-font-smoothing:antialiased; overflow-wrap:anywhere}  /* long identifiers (CURRENT_CTL_CONFIG_PWM_DUTY_CYCLE_MAX) must not widen the page at phone width */
+.wrap{max-width:1320px; margin:0 auto; padding-inline:20px; padding-block:36px 72px; display:flex; flex-direction:column; gap:28px}
+h1,h2,h3{margin:0; text-wrap:balance}
+p{margin:0}
+:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+a{color:inherit}
+
+.hero{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:28px 30px; display:flex; flex-direction:column; gap:12px}
+.hero-top{display:flex; align-items:center; gap:10px; margin-bottom:4px}
+.home{font:500 13px var(--f-sans); color:var(--mute); text-decoration:none; padding:6px 12px; border-radius:10px; background:var(--soft)}
+.home:hover{color:var(--ink)}
+.lang{margin-left:auto; display:inline-flex; padding:3px; gap:2px; border-radius:999px; background:var(--soft); border:0; cursor:pointer; font:600 12px/1 var(--f-mono); color:var(--mute)}
+.lang span{padding:5px 9px; border-radius:999px}
+.lang span.on{background:var(--ink); color:var(--bg)}
+.eyebrow{font:500 13px var(--f-mono); color:var(--acc)}
+h1{font-size:clamp(32px,4.4vw,52px); font-weight:600; letter-spacing:-.03em; line-height:1.08}
+.lead{color:var(--ink-2); max-width:62ch}
+.acts{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+.go{display:inline-flex; align-items:center; gap:6px; text-decoration:none; border-radius:12px; padding:9px 14px; font:500 14px var(--f-sans); background:var(--soft); color:var(--ink); border:0; cursor:pointer}
+.go:hover{background:var(--edge)}
+.go.main{background:var(--ink); color:var(--bg)}
+.num{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+
+.toc{position:sticky; top:0; z-index:2; display:flex; gap:6px; overflow-x:auto; padding:10px 0; background:var(--bg); scrollbar-width:thin}
+.toc a{flex:none; text-decoration:none; font:500 13px var(--f-sans); color:var(--ink-2); background:var(--tile); border:1px solid var(--edge); border-radius:999px; padding:6px 12px; white-space:nowrap}
+.toc a .num{color:var(--faint); margin-right:6px}
+.toc a.on{background:var(--acc-soft); box-shadow:inset 0 0 0 1.5px var(--acc); border-color:transparent; color:var(--ink)}
+
+.chap{display:flex; flex-direction:column; gap:14px; scroll-margin-top:64px}
+.chap > header{display:flex; align-items:baseline; gap:12px; padding:8px 4px 0}
+.chap > header .num{font-size:14px; color:var(--acc)}
+.chap > header h2{font-size:24px; font-weight:600; letter-spacing:-.02em}
+.chap > header small{color:var(--mute); font-size:14px}
+.slide{display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:0; background:var(--tile); border:1px solid var(--edge); border-radius:22px; overflow:hidden}
+.slide img{display:block; width:100%; aspect-ratio:16/9; background:#070b16; cursor:zoom-in}
+.notes{padding:20px 22px; display:flex; flex-direction:column; gap:12px}
+.notes .meta{display:flex; gap:10px; align-items:center; font:500 12px var(--f-mono); color:var(--faint)}
+.notes .meta a{color:var(--acc); text-decoration:none; background:var(--acc-soft); border-radius:8px; padding:3px 8px}
+.line .a{color:var(--ink); font-size:15.5px}
+.line .b{color:var(--mute); font-size:13.5px; margin-top:2px}
+.zoom{position:fixed; inset:0; z-index:9; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out}
+.zoom img{max-width:100%; max-height:100%; border-radius:8px}
+/* code index + practice: the two pages that close the 课件 */
+.extra{display:flex; flex-direction:column; gap:14px; scroll-margin-top:64px}
+.extra > header{display:flex; align-items:baseline; gap:12px; padding:8px 4px 0; flex-wrap:wrap}
+.extra > header h2{font-size:24px; font-weight:600; letter-spacing:-.02em}
+.extra > header small{color:var(--mute); font-size:14px}
+.tile{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:8px 0; overflow-x:auto}
+.cix{width:100%; border-collapse:collapse; font-size:14px}
+.cix th{text-align:left; font:500 12px var(--f-mono); color:var(--faint); padding:10px 14px; border-bottom:1px solid var(--edge)}
+.cix td{padding:10px 14px; border-bottom:1px solid var(--edge); vertical-align:top}
+.cix tr:last-child td{border-bottom:0}
+.cix .f{font-family:var(--f-mono); font-size:13px; color:var(--ink); word-break:break-all}
+.cix .f b{font-weight:600}
+.cix .fn{font-family:var(--f-mono); font-size:13px; color:var(--acc)}
+.cix .where{color:var(--ink-2)} .cix .where small{display:block; color:var(--mute); font-size:12.5px}
+.cix a{color:var(--acc); text-decoration:none; font-family:var(--f-mono); font-size:12.5px; background:var(--acc-soft); border-radius:8px; padding:2px 7px; white-space:nowrap; display:inline-block; margin:0 4px 4px 0}
+.qs{display:flex; flex-direction:column; gap:12px}
+.q{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:20px 22px; display:flex; flex-direction:column; gap:10px}
+.q .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font:500 12px var(--f-mono); color:var(--faint)}
+.chip{font:500 12px var(--f-sans); border-radius:999px; padding:3px 9px; background:var(--soft); color:var(--ink-2)}
+.chip.new{background:var(--acc-soft); color:var(--acc)}
+.chip.reasoned{background:transparent; box-shadow:inset 0 0 0 1px var(--edge-2); color:var(--mute)}
+.q .meta a{color:var(--acc); text-decoration:none; background:var(--acc-soft); border-radius:8px; padding:3px 8px}
+.q .ask{font-size:16px; color:var(--ink)} .q .ask small{display:block; color:var(--mute); font-size:13.5px; margin-top:2px}
+.q details{border-top:1px solid var(--edge); padding-top:10px}
+.q summary{cursor:pointer; font:500 14px var(--f-sans); color:var(--acc); list-style:none} .q summary::-webkit-details-marker{display:none}
+.q .ans{margin-top:8px; display:flex; flex-direction:column; gap:8px}
+.q .ans .a{color:var(--ink)} .q .ans .b{color:var(--mute); font-size:13.5px}
+.q .why{background:var(--soft); border-radius:14px; padding:10px 14px; font-size:14px; color:var(--ink-2)}
+.q .why .lab{font:500 12px var(--f-mono); color:var(--faint); display:block; margin-bottom:2px}
+.q code{font-family:var(--f-mono); font-size:12.5px; background:var(--soft-2); border:1px solid var(--edge); border-radius:6px; padding:1px 6px; word-break:break-all}
+@media (max-width:760px){ .slide{grid-template-columns:1fr} .hero{padding:22px 20px}
+  .cix thead{display:none} .cix tr{display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:6px; padding:12px 14px; border-bottom:1px solid var(--edge)}
+  .cix tr:last-child{border-bottom:0} .cix td{display:block; padding:0; border:0; grid-column:2} .cix td:first-child{grid-column:1; grid-row:1 / span 4}
+  .cix .fn{word-break:break-all; margin-top:2px} .cix .where{margin-top:4px} }
+
+/* Handout: one slide per A4 landscape page, notes in both languages (slides.mjs prints ?print to slides.pdf) */
+@page{size:A4 landscape; margin:10mm}
+@media print{
+  body{background:#fff; color:#141414}
+  .wrap{padding:0; gap:0; max-width:none}
+  .hero,.toc,.chap > header,.zoom,.meta a{display:none!important}
+  .chap{gap:0}
+  .slide{grid-template-columns:1fr; border:0; border-radius:0; break-after:page; break-inside:avoid; height:189mm; align-content:start}
+  .slide img{width:auto; height:auto; max-height:136mm; max-width:100%; margin:0 auto; border-radius:4px; cursor:auto}
+  .notes{padding:4mm 2mm 0; gap:5px}
+  .notes .meta{color:#6E6E73}
+  .line .a{font-size:11pt; color:#141414} .line .b{font-size:9.5pt; color:#3F3F46}
+  .extra{break-before:page; gap:4mm} .extra > header{display:flex!important; padding:0}
+  .tile,.q{border:1px solid #D6D6D2; border-radius:8px; break-inside:avoid; background:#fff} .tile{overflow:visible}
+  .cix{font-size:9pt} .cix td,.cix th{padding:4px 8px} .cix a{background:none; padding:0}
+  .q{padding:4mm 5mm; gap:2mm} .q summary{display:none} .q .why{background:#F5F5F3}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top"><a class="home" id="homeLink" href="../../index.html#ep02" hidden data-en="← Course home">← 课程首页</a><button class="lang" id="langBtn" type="button"></button></div>
+    <p class="eyebrow" data-en="EtherCAT from Scratch · Episode 2 · Slides">EtherCAT 从零读懂 · 第 2 集 · 课件</p>
+    <h1 data-en="One cable is already a ring">一根网线就是一个环</h1>
+    <p class="lead" id="lead"></p>
+    <div class="acts"><a class="go main" href="slides.pdf" download data-en="Download PDF">下载 PDF</a><button class="go" type="button" onclick="print()" data-en="Print">打印</button></div>
+  </header>
+  <nav class="toc" id="toc" aria-label="章节" data-en-label="Chapters"></nav>
+  <main id="chapters" style="display:flex; flex-direction:column; gap:36px"></main>
+  <section class="extra" id="code-index" hidden></section>
+  <section class="extra" id="practice" hidden></section>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+if (EN) document.querySelectorAll('[data-en]').forEach(e => e.innerHTML = e.dataset.en);
+if (EN) document.querySelectorAll('[data-en-label]').forEach(e => e.setAttribute('aria-label', e.dataset.enLabel));
+if (EN) document.title = $('h1').textContent + ' · Slides';  // read from the DOM: a title may contain quotes
+$('#langBtn').innerHTML = `<span class="${EN ? '' : 'on'}">中</span><span class="${EN ? 'on' : ''}">EN</span>`;
+$('#langBtn').addEventListener('click', () => { try { localStorage.setItem('course.lang', EN ? 'zh' : 'en'); } catch {} location.reload(); });
+// links back into the course site only work when served by it (not from the episode folder on file://)
+const SITE = location.protocol !== 'file:';
+$('#homeLink').hidden = !SITE;
+$('#lead').textContent = L(`视频的 ${DATA.slides.length} 张截图，按章节排好，每张旁边是那一段的讲解（${mmss(DATA.total)} 视频）。点图片看大图，点时间从那里开始播放视频。`,
+  `${DATA.slides.length} screenshots of the video, by chapter, each with the narration of that moment (${mmss(DATA.total)} of video). Click a picture to enlarge it, a time to play the video from there.`);
+const title = c => PRINT ? `${c.zh} · ${c.title}` : L(c.zh, c.title);
+const chaps = DATA.chapters.map(c => ({...c, slides: DATA.slides.filter(s => s.scene === c.id)})).filter(c => c.slides.length);
+$('#toc').innerHTML = chaps.map(c => `<a href="#c-${esc(c.id)}"><span class="num">${String(c.n).padStart(2, '0')}</span>${esc(title(c))}</a>`).join('');
+$('#chapters').innerHTML = chaps.map(c => `<section class="chap" id="c-${esc(c.id)}">
+  <header><span class="num">${String(c.n).padStart(2, '0')}</span><h2>${esc(title(c))}</h2><small>${esc(EN ? c.zh : c.title)}</small></header>
+  ${c.slides.map(s => `<article class="slide" id="s-${DATA.slides.indexOf(s) + 1}"><img src="${esc(s.img)}" alt="${esc(title(c))}" loading="${PRINT ? 'eager' : 'lazy'}">
+    <div class="notes"><div class="meta"><span class="num">${String(DATA.slides.indexOf(s) + 1).padStart(3, '0')} · ${esc(title(c))}</span>${SITE ? `<a class="num" href="../../index.html#ep02@${Math.floor(s.t)}">▶ ${mmss(s.t)}</a>` : `<span class="num">${mmss(s.t)}</span>`}</div>
+      ${s.lines.map(([en, zh]) => `<div class="line"><div class="a">${esc(EN ? en : zh)}</div><div class="b">${esc(EN ? zh : en)}</div></div>`).join('')}</div></article>`).join('')}
+</section>`).join('');
+// in print (the PDF) labels carry both languages, like the slide notes
+const L2 = (zh, en) => PRINT ? (zh && en ? `${zh} · ${en}` : zh || en) : L(zh, en);
+// code index: every code pane of the video, in order of appearance
+const chapOf = id => DATA.chapters.find(c => c.id === id);
+const play = t => SITE ? `<a href="../../index.html#ep02@${Math.floor(t)}">▶ ${mmss(t)}</a>` : `<span class="num">${mmss(t)}</span> `;
+if (DATA.code && DATA.code.length) {
+  const loc = c => { if (!c.file) return `<b>${esc(c.title)}</b>`; const i = c.file.lastIndexOf('/') + 1;
+    return `${esc(c.file.slice(0, i))}<b>${esc(c.file.slice(i))}</b>${c.a ? ` · L${c.a}${c.b && c.b !== c.a ? '–' + c.b : ''}` : ''}`; };
+  $('#code-index').hidden = false;
+  $('#code-index').innerHTML = `<header><h2>${L2('代码索引', 'Code index')}</h2><small>${L2(`视频里出现的 ${DATA.code.length} 段源码，按出场顺序。对着文件和行号打开源码，就是视频里那几行。`, `The ${DATA.code.length} source excerpts shown in the video, in order of appearance. Open the file at these lines and you see exactly what the video showed.`)}</small></header>
+  <div class="tile"><table class="cix"><thead><tr><th>#</th><th>${L2('文件 · 行', 'File · lines')}</th><th>${L2('函数', 'Function')}</th><th>${L2('出现在', 'Shown in')}</th><th>${L2('视频', 'Video')}</th></tr></thead><tbody>
+  ${DATA.code.map((c, i) => { const ch = chapOf(c.scene); return `<tr><td class="num">${i + 1}</td><td class="f">${loc(c)}</td><td class="fn">${esc(c.fn || '')}</td>
+    <td class="where">${esc(title(ch))}<small><a href="#s-${c.slide + 1}">${L2('课件', 'Slide')} ${String(c.slide + 1).padStart(3, '0')}</a></small></td>
+    <td>${[c.t, ...c.again].map(play).join('')}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+// practice: the video's guess-first questions plus new ones, each with its answer and what it rests on
+if (DATA.practice && DATA.practice.length) {
+  const two = ([zh, en]) => PRINT ? `<div class="a">${esc(zh)}</div><div class="b">${esc(en)}</div>` : `<div class="a">${esc(L(zh, en))}</div><div class="b">${esc(EN ? zh : en)}</div>`;
+  $('#practice').hidden = false;
+  $('#practice').innerHTML = `<header><h2>${L2('练习', 'Practice')}</h2><small>${L2('先自己答，再看答案。每个答案都写了依据：源码行，或者真实运行。', 'Answer first, then open the answer. Each one says what it rests on: source lines or a real run.')}</small></header>
+  <div class="qs">${DATA.practice.map((q, i) => `<article class="q">
+    <div class="meta"><span class="num">${L2(`第 ${i + 1} 题`, `Q${i + 1}`)}</span><span class="chip ${q.scene ? '' : 'new'}">${q.scene ? L2('视频里的题', 'From the video') : L2('新题', 'New')}</span>${q.reasoned ? `<span class="chip reasoned">${L2('按代码推演', 'Worked out from the code')}</span>` : ''}${q.scene && q.t != null ? play(q.t) : ''}</div>
+    <div class="ask">${PRINT ? `${esc(q.q[0])}<small>${esc(q.q[1])}</small>` : `${esc(L(q.q[0], q.q[1]))}<small>${esc(EN ? q.q[0] : q.q[1])}</small>`}</div>
+    <details${PRINT ? ' open' : ''}><summary>${L2('看答案', 'Show answer')}</summary><div class="ans">${two(q.a)}
+      <div class="why"><span class="lab">${L2('依据', 'Evidence')}</span>${esc(PRINT ? q.why[0] + ' / ' + q.why[1] : L(q.why[0], q.why[1]))}
+      ${(q.src || []).length ? `<div style="margin-top:6px">${q.src.map(x => `<code>${esc(x)}</code>`).join(' ')}</div>` : ''}${q.run ? `<div style="margin-top:6px"><code>${esc(q.run)}</code></div>` : ''}</div></div></details>
+  </article>`).join('')}</div>`;
+}
+$('#toc').insertAdjacentHTML('beforeend', (DATA.code && DATA.code.length ? `<a href="#code-index">${L('代码索引', 'Code index')}</a>` : '') + (DATA.practice && DATA.practice.length ? `<a href="#practice">${L('练习', 'Practice')}</a>` : ''));
+document.addEventListener('click', e => {
+  const img = e.target.closest('.slide img'); if (!img) return;
+  const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = `<img src="${img.src}" alt="">`; z.onclick = () => z.remove(); document.body.append(z);
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelector('.zoom')?.remove(); });
+// highlight the chapter being read
+const links = [...document.querySelectorAll('.toc a')];
+const io = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + x.target.id)); }), {rootMargin: '-20% 0px -70% 0px'});
+document.querySelectorAll('.chap, .extra').forEach(s => io.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+ok   intact: 3 slaves, ports 11 / 11 / 10
+ok   intact: every frame (212) takes the same path, back after 1485 ns
+ok   intact: reaches slave 1 / J1 / J2 at 10 / 320 / 630 ns
+ok   intact: leaves J2 / J1 / slave 1 at 935 / 1205 / 1475 ns
+ok   intact: nothing enters J2 port 1 (turns around inside J2)
+ok   model: 305 ns out, 265 ns back, 5 ns/m (labelled simulated)
+ok   intact: each slave adds 265 ns on the way back
+ok   intact: 305 ns chip + 5 ns cable per hop out
+ok   intact: counting read comes back with 3 (0 → 1 → 2 → 3)
+ok   cut after J1: 2 slaves, ports 11 / 10
+ok   cut after J1: turns at J1, back after 905 ns
+ok   cut after J1: counting read comes back with 2
+ok   intact: 0x0110 read back: port 1 is 10 / 10 / 01
+ok   cut after J1: 0x0110 read back: port 1 is 10 / 01
+ok   teaser: head back (1.5 µs) before a 5.8 µs frame has left
+ok   code: ec_config.c:72 is the counting BRD
+ok   code: ec_config.c:279/288/307 read 0x0110 and keep the open ports
+path (ns): {"1": {"in0_ns": 10, "pu_ns": 50, "in1_ns": 1210, "out0_ns": 1475}, "2": {"in0_ns": 320, "pu_ns": 360, "in1_ns": 940, "out0_ns": 1205}, "3": {"in0_ns": 630, "pu_ns": 670, "in1_ns": -1, "out0_ns": 935}}

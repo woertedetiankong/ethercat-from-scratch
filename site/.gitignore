@@ -1,0 +1,5 @@
+workspace/
+node_modules/
+dev/.cache/
+.DS_Store
+content/*/video.mp4

@@ -1,0 +1,60 @@
+{
+ "duration": 462.581,
+ "chapters": [
+  {
+   "t": 0.0,
+   "title": "1 毫秒的问题",
+   "title_en": "The 1 ms problem"
+  },
+  {
+   "t": 25.46,
+   "title": "我们的总线",
+   "title_en": "Our line"
+  },
+  {
+   "t": 78.7,
+   "title": "误差 = 速度 × 时间",
+   "title_en": "Error = speed × time"
+  },
+  {
+   "t": 126.39,
+   "title": "两种时间误差",
+   "title_en": "Two kinds of timing error"
+  },
+  {
+   "t": 162.45,
+   "title": "CANopen 的做法",
+   "title_en": "How CANopen handles it"
+  },
+  {
+   "t": 220.33,
+   "title": "先猜一猜",
+   "title_en": "Guess first"
+  },
+  {
+   "t": 242.24,
+   "title": "真实运行",
+   "title_en": "The real run"
+  },
+  {
+   "t": 311.1,
+   "title": "EtherCAT 的做法",
+   "title_en": "What EtherCAT does instead"
+  },
+  {
+   "t": 380.86,
+   "title": "这是怎么做到的？",
+   "title_en": "How is that possible?"
+  },
+  {
+   "t": 413.29,
+   "title": "本集要点",
+   "title_en": "Recap"
+  },
+  {
+   "t": 437.48,
+   "title": "你来算",
+   "title_en": "Your turn"
+  }
+ ]
+}

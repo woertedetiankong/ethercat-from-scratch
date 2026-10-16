@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* 课件 / slides: written by slides.mjs (it inlines the data below). Same 中 / EN switch as the course site. */
+const EN = (() => { let l = null; try { l = localStorage.getItem('course.lang'); } catch {} if (l !== 'zh' && l !== 'en') l = /^zh\b/i.test(navigator.language || '') ? 'zh' : 'en'; return l === 'en'; })();
+const L = (zh, en) => EN ? en : zh;
+document.documentElement.lang = EN ? 'en' : 'zh-CN';
+const DATA = {"total":462.581,"chapters":[{"id":"intro","n":0,"title":"The 1 ms problem","zh":"1 毫秒的问题","t":0},{"id":"line","n":1,"title":"Our line","zh":"我们的总线","t":25.458},{"id":"error","n":2,"title":"Error = speed × time","zh":"误差 = 速度 × 时间","t":78.698},{"id":"two","n":3,"title":"Two kinds of timing error","zh":"两种时间误差","t":126.389},{"id":"canopen","n":4,"title":"How CANopen handles it","zh":"CANopen 的做法","t":162.446},{"id":"guess","n":5,"title":"Guess first","zh":"先猜一猜","t":220.334},{"id":"run","n":6,"title":"The real run","zh":"真实运行","t":242.244},{"id":"dc","n":7,"title":"What EtherCAT does instead","zh":"EtherCAT 的做法","t":311.102},{"id":"road","n":8,"title":"How is that possible?","zh":"这是怎么做到的？","t":380.861},{"id":"recap","n":9,"title":"Recap","zh":"本集要点","t":413.285},{"id":"turn","n":10,"title":"Your turn","zh":"你来算","t":437.481}],"slides":[{"scene":"intro","ch":0,"title":"The 1 ms problem","zh":"1 毫秒的问题","t":0.9,"lines":[["Two robot joints get the same command at the same time.","两个机器人关节，在同一时刻收到同样的命令。"],["Will they really move at the same moment?","它们真的会在同一瞬间动起来吗？"]],"img":"slides/001.jpg"},{"scene":"intro","ch":0,"title":"The 1 ms problem","zh":"1 毫秒的问题","t":11.56,"lines":[["This course is about EtherCAT, the bus inside many robot joints.","这门课讲 EtherCAT，很多机器人关节里用的就是这条总线。"],["Before how it works, one question: why does timing matter so much?","讲它怎么工作之前，先回答一个问题：为什么时间这么要紧？"]],"img":"slides/002.jpg"},{"scene":"line","ch":1,"title":"Our line","zh":"我们的总线","t":26.36,"lines":[["Every episode uses the same small line.","每一集都用同一条小总线。"],["One master, then three slaves on one cable.","一个主站，后面一根网线串着三个从站。"],["Master: the controller that sends commands. Slave: a device that obeys and reports.","主站：发命令的控制器。从站：听命令、回数据的设备。"],["Slave 1 is an analog input card. Slaves 2 and 3 are joint drives, J1 and J2.","从站 1 是模拟量采集卡，从站 2 和 3 是两个关节驱动器：J1、J2。"]],"img":"slides/003.jpg"},{"scene":"line","ch":1,"title":"Our line","zh":"我们的总线","t":51.21,"lines":[["The master is real open-source code, SOEM. The slaves are simulated chips.","主站是真实的开源代码 SOEM，从站是模拟出来的芯片。"],["Every number in this course comes from running it.","这门课里的每个数字，都来自真实运行。"]],"img":"slides/004.jpg"},{"scene":"line","ch":1,"title":"Our line","zh":"我们的总线","t":62.74,"lines":[["Every 1 ms, the master sends J1 and J2 a new target position.","主站每 1 毫秒给 J1、J2 发一个新的目标位置。"],["Both follow the same slow wave, so they should always be in the same place.","两个关节走同一条缓慢的正弦曲线，所以它们应该永远在同一个位置。"]],"img":"slides/005.jpg"},{"scene":"error","ch":2,"title":"Error = speed × time","zh":"误差 = 速度 × 时间","t":79.6,"lines":[["A moving joint does not wait for you.","运动中的关节不会等你。"]],"img":"slides/006.jpg"},{"scene":"error","ch":2,"title":"Error = speed × time","zh":"误差 = 速度 × 时间","t":84.28,"lines":[["Apply a target late, and the joint is behind by speed × lateness.","目标晚一点生效，关节就落后：落后量 = 速度 × 晚了多久。"]],"img":"slides/007.jpg"},{"scene":"error","ch":2,"title":"Error = speed × time","zh":"误差 = 速度 × 时间","t":91.13,"lines":[["A machine tool at F1000 moves 1000 mm per minute: about 16.7 mm per second.","机床走 F1000：每分钟 1000 毫米，约每秒 16.7 毫米。"],["1 ms late: 16.7 mm/s × 0.001 s ≈ 0.017 mm, about 17 µm.","晚 1 毫秒：16.7 mm/s × 0.001 s ≈ 0.017 mm，约 17 微米。"]],"img":"slides/008.jpg"},{"scene":"error","ch":2,"title":"Error = speed × time","zh":"误差 = 速度 × 时间","t":106.14,"lines":[["A robot joint turning 180° per second: 1 ms late is 0.18°.","机器人关节每秒转 180°：晚 1 毫秒就是 0.18°。"],["At the end of a 0.5 m arm, 0.18° is about 1.6 mm.","在 0.5 米长的手臂末端，0.18° 约等于 1.6 毫米。"]],"img":"slides/009.jpg"},{"scene":"error","ch":2,"title":"Error = speed × time","zh":"误差 = 速度 × 时间","t":119.41,"lines":[["For a moving machine, a timing error is a position error.","对运动中的机器来说，时间误差就是位置误差。"]],"img":"slides/010.jpg"},{"scene":"two","ch":3,"title":"Two kinds of timing error","zh":"两种时间误差","t":127.29,"lines":[["Timing can go wrong in two different ways.","时间可以错在两个地方。"],["Skew: within one cycle, J1 and J2 act at different moments.","偏差（skew）：同一个周期里，J1 和 J2 动作的时刻不一样。"],["Jitter: the cycle itself wobbles. 1 ms becomes 0.8, then 1.2.","抖动（jitter）：周期本身在晃。1 毫秒一会儿变 0.8，一会儿变 1.2。"],["Skew makes the joints disagree with each other.","偏差让关节之间对不上。"]],"img":"slides/011.jpg"},{"scene":"two","ch":3,"title":"Two kinds of timing error","zh":"两种时间误差","t":148.61,"lines":[["Jitter makes the whole motion stumble, even when the joints agree.","抖动让整个动作磕磕绊绊，哪怕关节彼此一致。"],["Like a band that plays together, but follows a conductor whose beat wobbles.","像一支乐队：大家彼此很齐，但指挥的拍子忽快忽慢。"]],"img":"slides/012.jpg"},{"scene":"canopen","ch":4,"title":"How CANopen handles it","zh":"CANopen 的做法","t":163.35,"lines":[["Send each motor its command in turn, and the first moves before the last one hears.","如果挨个给电机发命令，第一个已经动了，最后一个才收到。"],["That is skew. CANopen's CSP mode fixes it with one broadcast.","这就是偏差。CANopen 的 CSP 模式用一条广播来解决。"],["First each drive gets its target. Then one SYNC message, ID 0x80, says: everyone, go.","先把目标分别发给每个驱动器，再发一条 SYNC 报文（ID 0x80）：大家一起动。"],["One message reaches every drive together, so skew is small.","一条报文同时到达所有驱动器，偏差就小了。"],["But when does SYNC leave? When the master's software timer fires.","但 SYNC 什么时候发出？取决于主站的软件定时器。"],["If the bus is busy, SYNC waits. One 8-byte CAN frame takes about 0.1 ms at 1 Mbit/s.","总线正忙，SYNC 就得等。1 Mbit/s 下，一个 8 字节的 CAN 帧约要 0.1 毫秒。"]],"img":"slides/013.jpg"},{"scene":"canopen","ch":4,"title":"How CANopen handles it","zh":"CANopen 的做法","t":205.76,"lines":[["Then each drive reacts through an interrupt, which adds its own delay.","每个驱动器还要经过中断才响应，又添一段延迟。"]],"img":"slides/014.jpg"},{"scene":"canopen","ch":4,"title":"How CANopen handles it","zh":"CANopen 的做法","t":212.18,"lines":[["So SYNC fixes skew, not jitter. Every drive inherits the master's wobble.","所以 SYNC 治了偏差，治不了抖动：每个驱动器都继承了主站的晃动。"]],"img":"slides/015.jpg"},{"scene":"guess","ch":5,"title":"Guess first","zh":"先猜一猜","t":221.23,"lines":[["Back on our line. First, the drives act the moment new targets arrive.","回到我们的总线。先让驱动器在新目标到达的那一刻动作。"],["The master tries to send exactly every 1 ms.","主站尽量每 1 毫秒准时发一次。"],["Guess: how far from 1 ms will the real cycles land?","猜一猜：实际的周期会偏离 1 毫秒多少？"]],"img":"slides/016.jpg"},{"scene":"run","ch":6,"title":"The real run","zh":"真实运行","t":243.14,"lines":[["3 seconds of running: about 2,500 cycles measured at J1.","运行 3 秒：在 J1 上测到约 2500 个周期。"],["Most cycles stay near 1 ms. But some come hundreds of microseconds early or late.","大多数周期在 1 毫秒附近，但总有一些早到或晚到几百微秒。"]],"img":"slides/017.jpg"},{"scene":"run","ch":6,"title":"The real run","zh":"真实运行","t":256.41,"lines":[["The spread, one standard deviation, is tens of microseconds, in every run.","离散程度（一个标准差）每次运行都是几十微秒。"],["The wobble comes from the master: an ordinary Mac, not a real-time system.","这些晃动来自主站：一台普通的 Mac，不是实时系统。"],["A real-time OS makes it much smaller, but never zero.","换成实时操作系统能小很多，但永远不会是零。"]],"img":"slides/018.jpg"},{"scene":"run","ch":6,"title":"The real run","zh":"真实运行","t":275.41,"lines":[["Now J1 against J2: they act 310 ns apart, in every cycle.","再看 J1 和 J2 之间：每个周期都相差 310 纳秒。"],["310 ns is the simulated cable and chip delay. One frame passes J1, then J2.","310 纳秒是模拟的网线加芯片延迟：同一帧先经过 J1，再经过 J2。"],["So skew is tiny. Episode 3 shows how one frame does that.","所以偏差很小。一帧怎么做到这一点，第 3 集再讲。"]],"img":"slides/019.jpg"},{"scene":"run","ch":6,"title":"The real run","zh":"真实运行","t":295.96,"lines":[["But the jitter goes straight through to the motors.","可是抖动原封不动地传给了电机。"],["At 180°/s, a cycle 0.2 ms late leaves J1 0.036° behind: about 0.3 mm at the arm tip.","以每秒 180° 计，晚到 0.2 毫秒的周期让 J1 落后 0.036°，在手臂末端约 0.3 毫米。"]],"img":"slides/020.jpg"},{"scene":"dc","ch":7,"title":"What EtherCAT does instead","zh":"EtherCAT 的做法","t":312,"lines":[["Same line, one change: each drive acts on its own clock.","同一条总线，只改一处：每个驱动器按自己的时钟动作。"],["Every slave chip has a clock. EtherCAT keeps all those clocks in step.","每个从站芯片里都有一个时钟。EtherCAT 让这些时钟步调一致。"],["This is called the Distributed Clock, DC for short.","这叫分布式时钟（Distributed Clock），简称 DC。"],["Every 1 ms by its own clock, each drive fires a pulse called SYNC0, and acts on it.","每个驱动器按自己的时钟，每 1 毫秒产生一个叫 SYNC0 的脉冲，就在这一刻动作。"],["The frame only has to arrive before SYNC0. Exactly when no longer matters.","帧只要在 SYNC0 之前到就行，具体哪一刻到已经无所谓。"],["Same master, same Mac, the sending still wobbles.","主站还是那台 Mac，发送照样在晃。"]],"img":"slides/021.jpg"},{"scene":"dc","ch":7,"title":"What EtherCAT does instead","zh":"EtherCAT 的做法","t":350.96,"lines":[["Cycle spread at the drives: about 5 ns, in every run.","驱动器上的周期离散：约 5 纳秒，每次运行都一样。"],["Once the clocks settle, J1 and J2 act within about 10 ns of each other.","时钟稳定下来以后，J1 和 J2 动作的时刻相差在 10 纳秒左右。"],["From tens of microseconds to a few nanoseconds: about ten thousand times tighter.","从几十微秒到几纳秒：大约收紧了一万倍。"],["Note: how fast the clocks settle comes from our simulated chip, not a real one.","注意：时钟多快能稳定，取决于我们模拟的芯片，不是某款真实芯片的数据。"]],"img":"slides/022.jpg"},{"scene":"road","ch":8,"title":"How is that possible?","zh":"这是怎么做到的？","t":381.76,"lines":[["Getting there takes four questions, one at a time.","要做到这一点，需要回答四个问题，一个一个来。"],["How is one cable already a ring? Episode 2.","一根网线，怎么就已经是一个环？第 2 集。"],["How does one frame serve every slave without stopping? Episode 3.","一帧怎么不停下来，就服务了每一个从站？第 3 集。"],["How does the line start up and agree who sends what? Episode 4.","总线怎么启动，怎么约定谁收发哪些数据？第 4 集。"],["How do clocks in different chips agree to a few nanoseconds? Episode 5.","不同芯片里的时钟，怎么对齐到几纳秒？第 5 集。"]],"img":"slides/023.jpg"},{"scene":"recap","ch":9,"title":"Recap","zh":"本集要点","t":414.19,"lines":[["One: for a moving machine, timing error is position error. Speed × time.","一、对运动中的机器，时间误差就是位置误差：速度 × 时间。"],["Two: skew and jitter differ. One is between joints, the other is the beat itself.","二、偏差和抖动是两回事：一个在关节之间，一个是节拍本身。"],["Three: acting when a message arrives inherits the sender's jitter. A shared clock removes it.","三、收到报文就动作，会继承发送方的抖动；共享的时钟才能去掉它。"]],"img":"slides/024.jpg"},{"scene":"turn","ch":10,"title":"Your turn","zh":"你来算","t":438.38,"lines":[["A joint turns at 90° per second. One cycle arrives 0.3 ms late.","一个关节每秒转 90°，某个周期晚到了 0.3 毫秒。"],["How far behind is it, in degrees?","它落后了多少度？"],["90°/s × 0.0003 s = 0.027°.","90°/s × 0.0003 s = 0.027°。"]],"img":"slides/025.jpg"},{"scene":"turn","ch":10,"title":"Your turn","zh":"你来算","t":456.03,"lines":[["Next: one cable, and why it is already a ring.","下一集：一根网线，为什么它已经是一个环。"]],"img":"slides/026.jpg"}],"code":[],"practice":[{"scene":"guess","q":["驱动器在新目标到达时动作，主站尽量每 1 毫秒发一次。实际周期会偏离 1 毫秒多少？","The drives act when new targets arrive, and the master tries to send every 1 ms. How far from 1 ms do the real cycles land?"],"a":["大多数在 1 毫秒附近，但标准差有几十微秒，总有周期早到或晚到几百微秒，偶尔还会晚到几毫秒（macOS 调度的停顿）。J1 和 J2 之间却每个周期都只差 310 纳秒。","Most stay near 1 ms, but the spread is tens of microseconds, some cycles come hundreds of microseconds early or late, and now and then one is milliseconds late (a macOS scheduling stall). Yet J1 and J2 are only 310 ns apart in every cycle."],"why":["三次真实运行，每次约 2500 个周期，data.py 逐条检查这些性质。310 纳秒是模拟的网线（5 ns）加芯片处理（305 ns，取自 ET1100 数据手册）延迟。","Three real runs of about 2,500 cycles each; data.py checks each property. The 310 ns is the simulated cable (5 ns) plus chip processing delay (305 ns, from the ET1100 datasheet)."],"run":"episodes/ep01-sync-is-accuracy/data/runs.sh","t":220.334},{"scene":"turn","q":["一个关节每秒转 90°，某个周期晚到了 0.3 毫秒。它落后了多少度？","A joint turns at 90° per second. One cycle arrives 0.3 ms late. How far behind is it, in degrees?"],"a":["90°/s × 0.0003 s = 0.027°。","90°/s × 0.0003 s = 0.027°."],"why":["误差 = 速度 × 晚了多久。先把毫秒换成秒。","Error = speed × lateness. Convert ms to s first."],"reasoned":true,"t":437.481},{"q":["机床以 F3000 进给，主站抖动 50 微秒。位置误差大约是多少？","A machine tool feeds at F3000 and the master jitters by 50 µs. Roughly what position error is that?"],"a":["F3000 = 3000 mm/min = 50 mm/s。50 mm/s × 0.00005 s = 0.0025 mm，也就是 2.5 微米。","F3000 = 3000 mm/min = 50 mm/s. 50 mm/s × 0.00005 s = 0.0025 mm, that is 2.5 µm."],"why":["F 值的单位是毫米每分钟，先除以 60 换成每秒。","The F value is in mm per minute: divide by 60 to get per second."],"reasoned":true},{"q":["三个驱动器收到同一条广播就动作，但广播在 1.0、2.1、2.9 毫秒时发出。这是偏差还是抖动？","Three drives act on one broadcast, but the broadcasts leave at 1.0, 2.1 and 2.9 ms. Is that skew or jitter?"],"a":["抖动。三个驱动器彼此一致（没有偏差），但节拍本身是 1.1 毫秒、0.8 毫秒，不是 1 毫秒。","Jitter. The three drives agree with each other (no skew), but the beat itself is 1.1 ms, then 0.8 ms, not 1 ms."],"why":["偏差是同一周期里关节之间的时刻差；抖动是周期本身的长短在变。","Skew is the time difference between joints within one cycle; jitter is the cycle length itself changing."],"reasoned":true},{"q":["用了分布式时钟以后，主站发送仍然晃几十微秒。为什么这些晃动传不到关节？","With distributed clocks, the master's sending still wobbles by tens of microseconds. Why doesn't that wobble reach the joints?"],"a":["关节不再在帧到达时动作，而是在自己时钟产生的 SYNC0 时刻动作。帧只要在 SYNC0 之前到就行。真实运行里驱动器的周期离散约 5 纳秒。前提是帧真的提前到了；晚于 SYNC0 会怎样，第 5 集再讲。","The joints no longer act when a frame arrives; they act on SYNC0 from their own clocks. The frame only has to arrive before SYNC0. In the real run the drives' period spread is about 5 ns. That assumes the frame does arrive first; what happens if it is late is Episode 5."],"why":["同一条虚拟总线、同一台 Mac，只把驱动器改成按 SYNC0 动作；三次运行周期离散都约 5 纳秒（模拟芯片）。","Same virtual line, same Mac, only the drives switched to act on SYNC0; all three runs show about 5 ns period spread (simulated chips)."],"run":"episodes/ep01-sync-is-accuracy/data/runs.sh"}]};
+const PRINT = location.search.includes('print');
+</script>
+<title>1 毫秒的问题：为什么同步就是精度 课件</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F2F2F0; --tile:#FFFFFF; --soft:#F5F5F3; --soft-2:#FAFAF9; --edge:#E4E4E1; --edge-2:#D6D6D2;
+  --ink:#141414; --ink-2:#3F3F46; --mute:#6E6E73; --faint:#A1A1A6;
+  --acc:#4F46E5; --acc-soft:#EEF0FF;
+  --f-sans:"Geist","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"Geist Mono","SFMono-Regular",Menlo,Consolas,"Noto Sans SC",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0B0B0C; --tile:#161618; --soft:#1D1D20; --soft-2:#1A1A1D; --edge:#26262A; --edge-2:#34343A;
+  --ink:#EDEDEF; --ink-2:#C9C9CF; --mute:#9A9AA2; --faint:#6B6B73; --acc:#8B85FF; --acc-soft:#22213A; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0B0B0C; --tile:#161618; --soft:#1D1D20; --soft-2:#1A1A1D; --edge:#26262A; --edge-2:#34343A;
+  --ink:#EDEDEF; --ink-2:#C9C9CF; --mute:#9A9AA2; --faint:#6B6B73; --acc:#8B85FF; --acc-soft:#22213A; color-scheme:dark; }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 var(--f-sans); -webkit-font-smoothing:antialiased; overflow-wrap:anywhere}  /* long identifiers (CURRENT_CTL_CONFIG_PWM_DUTY_CYCLE_MAX) must not widen the page at phone width */
+.wrap{max-width:1320px; margin:0 auto; padding-inline:20px; padding-block:36px 72px; display:flex; flex-direction:column; gap:28px}
+h1,h2,h3{margin:0; text-wrap:balance}
+p{margin:0}
+:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+a{color:inherit}
+
+.hero{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:28px 30px; display:flex; flex-direction:column; gap:12px}
+.hero-top{display:flex; align-items:center; gap:10px; margin-bottom:4px}
+.home{font:500 13px var(--f-sans); color:var(--mute); text-decoration:none; padding:6px 12px; border-radius:10px; background:var(--soft)}
+.home:hover{color:var(--ink)}
+.lang{margin-left:auto; display:inline-flex; padding:3px; gap:2px; border-radius:999px; background:var(--soft); border:0; cursor:pointer; font:600 12px/1 var(--f-mono); color:var(--mute)}
+.lang span{padding:5px 9px; border-radius:999px}
+.lang span.on{background:var(--ink); color:var(--bg)}
+.eyebrow{font:500 13px var(--f-mono); color:var(--acc)}
+h1{font-size:clamp(32px,4.4vw,52px); font-weight:600; letter-spacing:-.03em; line-height:1.08}
+.lead{color:var(--ink-2); max-width:62ch}
+.acts{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+.go{display:inline-flex; align-items:center; gap:6px; text-decoration:none; border-radius:12px; padding:9px 14px; font:500 14px var(--f-sans); background:var(--soft); color:var(--ink); border:0; cursor:pointer}
+.go:hover{background:var(--edge)}
+.go.main{background:var(--ink); color:var(--bg)}
+.num{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+
+.toc{position:sticky; top:0; z-index:2; display:flex; gap:6px; overflow-x:auto; padding:10px 0; background:var(--bg); scrollbar-width:thin}
+.toc a{flex:none; text-decoration:none; font:500 13px var(--f-sans); color:var(--ink-2); background:var(--tile); border:1px solid var(--edge); border-radius:999px; padding:6px 12px; white-space:nowrap}
+.toc a .num{color:var(--faint); margin-right:6px}
+.toc a.on{background:var(--acc-soft); box-shadow:inset 0 0 0 1.5px var(--acc); border-color:transparent; color:var(--ink)}
+
+.chap{display:flex; flex-direction:column; gap:14px; scroll-margin-top:64px}
+.chap > header{display:flex; align-items:baseline; gap:12px; padding:8px 4px 0}
+.chap > header .num{font-size:14px; color:var(--acc)}
+.chap > header h2{font-size:24px; font-weight:600; letter-spacing:-.02em}
+.chap > header small{color:var(--mute); font-size:14px}
+.slide{display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:0; background:var(--tile); border:1px solid var(--edge); border-radius:22px; overflow:hidden}
+.slide img{display:block; width:100%; aspect-ratio:16/9; background:#070b16; cursor:zoom-in}
+.notes{padding:20px 22px; display:flex; flex-direction:column; gap:12px}
+.notes .meta{display:flex; gap:10px; align-items:center; font:500 12px var(--f-mono); color:var(--faint)}
+.notes .meta a{color:var(--acc); text-decoration:none; background:var(--acc-soft); border-radius:8px; padding:3px 8px}
+.line .a{color:var(--ink); font-size:15.5px}
+.line .b{color:var(--mute); font-size:13.5px; margin-top:2px}
+.zoom{position:fixed; inset:0; z-index:9; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out}
+.zoom img{max-width:100%; max-height:100%; border-radius:8px}
+/* code index + practice: the two pages that close the 课件 */
+.extra{display:flex; flex-direction:column; gap:14px; scroll-margin-top:64px}
+.extra > header{display:flex; align-items:baseline; gap:12px; padding:8px 4px 0; flex-wrap:wrap}
+.extra > header h2{font-size:24px; font-weight:600; letter-spacing:-.02em}
+.extra > header small{color:var(--mute); font-size:14px}
+.tile{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:8px 0; overflow-x:auto}
+.cix{width:100%; border-collapse:collapse; font-size:14px}
+.cix th{text-align:left; font:500 12px var(--f-mono); color:var(--faint); padding:10px 14px; border-bottom:1px solid var(--edge)}
+.cix td{padding:10px 14px; border-bottom:1px solid var(--edge); vertical-align:top}
+.cix tr:last-child td{border-bottom:0}
+.cix .f{font-family:var(--f-mono); font-size:13px; color:var(--ink); word-break:break-all}
+.cix .f b{font-weight:600}
+.cix .fn{font-family:var(--f-mono); font-size:13px; color:var(--acc)}
+.cix .where{color:var(--ink-2)} .cix .where small{display:block; color:var(--mute); font-size:12.5px}
+.cix a{color:var(--acc); text-decoration:none; font-family:var(--f-mono); font-size:12.5px; background:var(--acc-soft); border-radius:8px; padding:2px 7px; white-space:nowrap; display:inline-block; margin:0 4px 4px 0}
+.qs{display:flex; flex-direction:column; gap:12px}
+.q{background:var(--tile); border:1px solid var(--edge); border-radius:22px; padding:20px 22px; display:flex; flex-direction:column; gap:10px}
+.q .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font:500 12px var(--f-mono); color:var(--faint)}
+.chip{font:500 12px var(--f-sans); border-radius:999px; padding:3px 9px; background:var(--soft); color:var(--ink-2)}
+.chip.new{background:var(--acc-soft); color:var(--acc)}
+.chip.reasoned{background:transparent; box-shadow:inset 0 0 0 1px var(--edge-2); color:var(--mute)}
+.q .meta a{color:var(--acc); text-decoration:none; background:var(--acc-soft); border-radius:8px; padding:3px 8px}
+.q .ask{font-size:16px; color:var(--ink)} .q .ask small{display:block; color:var(--mute); font-size:13.5px; margin-top:2px}
+.q details{border-top:1px solid var(--edge); padding-top:10px}
+.q summary{cursor:pointer; font:500 14px var(--f-sans); color:var(--acc); list-style:none} .q summary::-webkit-details-marker{display:none}
+.q .ans{margin-top:8px; display:flex; flex-direction:column; gap:8px}
+.q .ans .a{color:var(--ink)} .q .ans .b{color:var(--mute); font-size:13.5px}
+.q .why{background:var(--soft); border-radius:14px; padding:10px 14px; font-size:14px; color:var(--ink-2)}
+.q .why .lab{font:500 12px var(--f-mono); color:var(--faint); display:block; margin-bottom:2px}
+.q code{font-family:var(--f-mono); font-size:12.5px; background:var(--soft-2); border:1px solid var(--edge); border-radius:6px; padding:1px 6px; word-break:break-all}
+@media (max-width:760px){ .slide{grid-template-columns:1fr} .hero{padding:22px 20px}
+  .cix thead{display:none} .cix tr{display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:6px; padding:12px 14px; border-bottom:1px solid var(--edge)}
+  .cix tr:last-child{border-bottom:0} .cix td{display:block; padding:0; border:0; grid-column:2} .cix td:first-child{grid-column:1; grid-row:1 / span 4}
+  .cix .fn{word-break:break-all; margin-top:2px} .cix .where{margin-top:4px} }
+
+/* Handout: one slide per A4 landscape page, notes in both languages (slides.mjs prints ?print to slides.pdf) */
+@page{size:A4 landscape; margin:10mm}
+@media print{
+  body{background:#fff; color:#141414}
+  .wrap{padding:0; gap:0; max-width:none}
+  .hero,.toc,.chap > header,.zoom,.meta a{display:none!important}
+  .chap{gap:0}
+  .slide{grid-template-columns:1fr; border:0; border-radius:0; break-after:page; break-inside:avoid; height:189mm; align-content:start}
+  .slide img{width:auto; height:auto; max-height:136mm; max-width:100%; margin:0 auto; border-radius:4px; cursor:auto}
+  .notes{padding:4mm 2mm 0; gap:5px}
+  .notes .meta{color:#6E6E73}
+  .line .a{font-size:11pt; color:#141414} .line .b{font-size:9.5pt; color:#3F3F46}
+  .extra{break-before:page; gap:4mm} .extra > header{display:flex!important; padding:0}
+  .tile,.q{border:1px solid #D6D6D2; border-radius:8px; break-inside:avoid; background:#fff} .tile{overflow:visible}
+  .cix{font-size:9pt} .cix td,.cix th{padding:4px 8px} .cix a{background:none; padding:0}
+  .q{padding:4mm 5mm; gap:2mm} .q summary{display:none} .q .why{background:#F5F5F3}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top"><a class="home" id="homeLink" href="../../index.html#ep01" hidden data-en="← Course home">← 课程首页</a><button class="lang" id="langBtn" type="button"></button></div>
+    <p class="eyebrow" data-en="EtherCAT from Scratch · Episode 1 · Slides">EtherCAT 从零读懂 · 第 1 集 · 课件</p>
+    <h1 data-en="The 1 ms problem: why sync is accuracy">1 毫秒的问题：为什么同步就是精度</h1>
+    <p class="lead" id="lead"></p>
+    <div class="acts"><a class="go main" href="slides.pdf" download data-en="Download PDF">下载 PDF</a><button class="go" type="button" onclick="print()" data-en="Print">打印</button></div>
+  </header>
+  <nav class="toc" id="toc" aria-label="章节" data-en-label="Chapters"></nav>
+  <main id="chapters" style="display:flex; flex-direction:column; gap:36px"></main>
+  <section class="extra" id="code-index" hidden></section>
+  <section class="extra" id="practice" hidden></section>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+if (EN) document.querySelectorAll('[data-en]').forEach(e => e.innerHTML = e.dataset.en);
+if (EN) document.querySelectorAll('[data-en-label]').forEach(e => e.setAttribute('aria-label', e.dataset.enLabel));
+if (EN) document.title = $('h1').textContent + ' · Slides';  // read from the DOM: a title may contain quotes
+$('#langBtn').innerHTML = `<span class="${EN ? '' : 'on'}">中</span><span class="${EN ? 'on' : ''}">EN</span>`;
+$('#langBtn').addEventListener('click', () => { try { localStorage.setItem('course.lang', EN ? 'zh' : 'en'); } catch {} location.reload(); });
+// links back into the course site only work when served by it (not from the episode folder on file://)
+const SITE = location.protocol !== 'file:';
+$('#homeLink').hidden = !SITE;
+$('#lead').textContent = L(`视频的 ${DATA.slides.length} 张截图，按章节排好，每张旁边是那一段的讲解（${mmss(DATA.total)} 视频）。点图片看大图，点时间从那里开始播放视频。`,
+  `${DATA.slides.length} screenshots of the video, by chapter, each with the narration of that moment (${mmss(DATA.total)} of video). Click a picture to enlarge it, a time to play the video from there.`);
+const title = c => PRINT ? `${c.zh} · ${c.title}` : L(c.zh, c.title);
+const chaps = DATA.chapters.map(c => ({...c, slides: DATA.slides.filter(s => s.scene === c.id)})).filter(c => c.slides.length);
+$('#toc').innerHTML = chaps.map(c => `<a href="#c-${esc(c.id)}"><span class="num">${String(c.n).padStart(2, '0')}</span>${esc(title(c))}</a>`).join('');
+$('#chapters').innerHTML = chaps.map(c => `<section class="chap" id="c-${esc(c.id)}">
+  <header><span class="num">${String(c.n).padStart(2, '0')}</span><h2>${esc(title(c))}</h2><small>${esc(EN ? c.zh : c.title)}</small></header>
+  ${c.slides.map(s => `<article class="slide" id="s-${DATA.slides.indexOf(s) + 1}"><img src="${esc(s.img)}" alt="${esc(title(c))}" loading="${PRINT ? 'eager' : 'lazy'}">
+    <div class="notes"><div class="meta"><span class="num">${String(DATA.slides.indexOf(s) + 1).padStart(3, '0')} · ${esc(title(c))}</span>${SITE ? `<a class="num" href="../../index.html#ep01@${Math.floor(s.t)}">▶ ${mmss(s.t)}</a>` : `<span class="num">${mmss(s.t)}</span>`}</div>
+      ${s.lines.map(([en, zh]) => `<div class="line"><div class="a">${esc(EN ? en : zh)}</div><div class="b">${esc(EN ? zh : en)}</div></div>`).join('')}</div></article>`).join('')}
+</section>`).join('');
+// in print (the PDF) labels carry both languages, like the slide notes
+const L2 = (zh, en) => PRINT ? (zh && en ? `${zh} · ${en}` : zh || en) : L(zh, en);
+// code index: every code pane of the video, in order of appearance
+const chapOf = id => DATA.chapters.find(c => c.id === id);
+const play = t => SITE ? `<a href="../../index.html#ep01@${Math.floor(t)}">▶ ${mmss(t)}</a>` : `<span class="num">${mmss(t)}</span> `;
+if (DATA.code && DATA.code.length) {
+  const loc = c => { if (!c.file) return `<b>${esc(c.title)}</b>`; const i = c.file.lastIndexOf('/') + 1;
+    return `${esc(c.file.slice(0, i))}<b>${esc(c.file.slice(i))}</b>${c.a ? ` · L${c.a}${c.b && c.b !== c.a ? '–' + c.b : ''}` : ''}`; };
+  $('#code-index').hidden = false;
+  $('#code-index').innerHTML = `<header><h2>${L2('代码索引', 'Code index')}</h2><small>${L2(`视频里出现的 ${DATA.code.length} 段源码，按出场顺序。对着文件和行号打开源码，就是视频里那几行。`, `The ${DATA.code.length} source excerpts shown in the video, in order of appearance. Open the file at these lines and you see exactly what the video showed.`)}</small></header>
+  <div class="tile"><table class="cix"><thead><tr><th>#</th><th>${L2('文件 · 行', 'File · lines')}</th><th>${L2('函数', 'Function')}</th><th>${L2('出现在', 'Shown in')}</th><th>${L2('视频', 'Video')}</th></tr></thead><tbody>
+  ${DATA.code.map((c, i) => { const ch = chapOf(c.scene); return `<tr><td class="num">${i + 1}</td><td class="f">${loc(c)}</td><td class="fn">${esc(c.fn || '')}</td>
+    <td class="where">${esc(title(ch))}<small><a href="#s-${c.slide + 1}">${L2('课件', 'Slide')} ${String(c.slide + 1).padStart(3, '0')}</a></small></td>
+    <td>${[c.t, ...c.again].map(play).join('')}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+// practice: the video's guess-first questions plus new ones, each with its answer and what it rests on
+if (DATA.practice && DATA.practice.length) {
+  const two = ([zh, en]) => PRINT ? `<div class="a">${esc(zh)}</div><div class="b">${esc(en)}</div>` : `<div class="a">${esc(L(zh, en))}</div><div class="b">${esc(EN ? zh : en)}</div>`;
+  $('#practice').hidden = false;
+  $('#practice').innerHTML = `<header><h2>${L2('练习', 'Practice')}</h2><small>${L2('先自己答，再看答案。每个答案都写了依据：源码行，或者真实运行。', 'Answer first, then open the answer. Each one says what it rests on: source lines or a real run.')}</small></header>
+  <div class="qs">${DATA.practice.map((q, i) => `<article class="q">
+    <div class="meta"><span class="num">${L2(`第 ${i + 1} 题`, `Q${i + 1}`)}</span><span class="chip ${q.scene ? '' : 'new'}">${q.scene ? L2('视频里的题', 'From the video') : L2('新题', 'New')}</span>${q.reasoned ? `<span class="chip reasoned">${L2('按代码推演', 'Worked out from the code')}</span>` : ''}${q.scene && q.t != null ? play(q.t) : ''}</div>
+    <div class="ask">${PRINT ? `${esc(q.q[0])}<small>${esc(q.q[1])}</small>` : `${esc(L(q.q[0], q.q[1]))}<small>${esc(EN ? q.q[0] : q.q[1])}</small>`}</div>
+    <details${PRINT ? ' open' : ''}><summary>${L2('看答案', 'Show answer')}</summary><div class="ans">${two(q.a)}
+      <div class="why"><span class="lab">${L2('依据', 'Evidence')}</span>${esc(PRINT ? q.why[0] + ' / ' + q.why[1] : L(q.why[0], q.why[1]))}
+      ${(q.src || []).length ? `<div style="margin-top:6px">${q.src.map(x => `<code>${esc(x)}</code>`).join(' ')}</div>` : ''}${q.run ? `<div style="margin-top:6px"><code>${esc(q.run)}</code></div>` : ''}</div></div></details>
+  </article>`).join('')}</div>`;
+}
+$('#toc').insertAdjacentHTML('beforeend', (DATA.code && DATA.code.length ? `<a href="#code-index">${L('代码索引', 'Code index')}</a>` : '') + (DATA.practice && DATA.practice.length ? `<a href="#practice">${L('练习', 'Practice')}</a>` : ''));
+document.addEventListener('click', e => {
+  const img = e.target.closest('.slide img'); if (!img) return;
+  const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = `<img src="${img.src}" alt="">`; z.onclick = () => z.remove(); document.body.append(z);
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelector('.zoom')?.remove(); });
+// highlight the chapter being read
+const links = [...document.querySelectorAll('.toc a')];
+const io = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + x.target.id)); }), {rootMargin: '-20% 0px -70% 0px'});
+document.querySelectorAll('.chap, .extra').forEach(s => io.observe(s));
+</script>
+</body>
+</html>

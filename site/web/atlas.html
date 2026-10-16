@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>项目地图</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%223%22 y=%223%22 width=%2226%22 height=%2226%22 rx=%224%22 fill=%22%23F7F9FB%22 stroke=%22%230E2236%22 stroke-width=%222.5%22/%3E%3Cpath d=%22M9 11h14M9 16h8M9 21h11%22 stroke=%22%23E39500%22 stroke-width=%222.5%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/atlas.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <div class="course"><a id="home" href="index.html" data-en="← Course home">← 课程首页</a> · <span id="course"></span></div>
+      <h1 id="title"></h1>
+      <p id="lead"></p>
+    </div>
+    <div class="side-top"><div id="tools"></div><div class="eps" id="eps"></div></div>
+  </header>
+
+  <div class="ledger">
+    <span id="ledgerText"></span>
+    <div class="bar" id="ledgerBar" aria-hidden="true"></div>
+    <div class="key"><span><i class="sw none"></i><span data-en="Not yet">还没学</span></span><span><i class="sw seen"></i><span data-en="Seen">见过</span></span><span><i class="sw read"></i><span data-en="Read">读懂</span></span><span><i class="sw new"></i><span data-en="New this episode">本集新点亮</span></span></div>
+  </div>
+
+  <nav class="views" id="views" role="tablist"></nav>
+
+  <section class="main">
+    <div>
+      <div class="sheet mapbox" id="mapbox"></div>
+      <span class="swipe" data-en="The map is wider than the screen; swipe sideways.">地图比屏幕宽，可以左右滑动</span>
+    </div>
+    <aside class="sheet side" id="side" aria-live="polite"></aside>
+  </section>
+
+  <p class="foot" id="foot"></p>
+</div>
+<script src="js/i18n.js"></script>
+<script src="js/course.js"></script>
+<script src="js/course.en.js"></script>
+<script src="js/atlas.data.js"></script>
+<script src="js/atlas.js"></script>
+</body>
+</html>

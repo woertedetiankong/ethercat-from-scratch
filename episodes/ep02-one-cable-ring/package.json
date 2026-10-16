@@ -1,0 +1,8 @@
+{
+  "name": "episode-video",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

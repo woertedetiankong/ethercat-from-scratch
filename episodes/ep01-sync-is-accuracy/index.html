@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1 毫秒的问题：为什么同步就是精度 · Episode 01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@500;600&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+SC:wght@500&display=swap">
+<style>
+  html,body{margin:0;height:100%;background:#070B16;color:#F3EBDD;font-family:"IBM Plex Sans",system-ui,sans-serif}
+  .player{max-width:1280px;margin:0 auto;padding:24px 16px;display:flex;flex-direction:column;gap:12px}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#0B1120}
+  .bar{display:flex;gap:12px;align-items:center}
+  .bar button{font:inherit;background:#F3EBDD;color:#0B1120;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;min-width:84px}
+  .bar input{flex:1;accent-color:#FFC24B}
+  .bar span{font-family:"JetBrains Mono",monospace;font-size:13px;color:#8D98B0;font-variant-numeric:tabular-nums}
+  body.record .bar{display:none} body.record .player{padding:0;max-width:none} body.record canvas{border-radius:0;width:1920px}
+</style>
+</head>
+<body>
+<div class="player">
+  <canvas id="cv" width="1920" height="1080"></canvas>
+  <div class="bar"><button id="pp" type="button">Play</button><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="tm">0:00</span></div>
+</div>
+<audio id="au" src="narration.mp3" preload="auto"></audio>
+<script>
+var TL = {
+ "total": 462.581,
+ "scenes": [
+  {
+   "id": "intro",
+   "title": "The 1 ms problem",
+   "zh": "1 毫秒的问题",
+   "start": 0.0,
+   "dur": 25.458,
+   "beats": [
+    {
+     "text": "Two robot joints get the same command at the same time.",
+     "zh": "两个机器人关节，在同一时刻收到同样的命令。",
+     "start": 0.9,
+     "dur": 5.383
+    },
+    {
+     "text": "Will they really move at the same moment?",
+     "zh": "它们真的会在同一瞬间动起来吗？",
+     "start": 6.883,
+     "dur": 4.078
+    },
+    {
+     "text": "This course is about EtherCAT, the bus inside many robot joints.",
+     "zh": "这门课讲 EtherCAT，很多机器人关节里用的就是这条总线。",
+     "start": 11.561,
+     "dur": 5.383
+    },
+    {
+     "text": "Before how it works, one question: why does timing matter so much?",
+     "zh": "讲它怎么工作之前，先回答一个问题：为什么时间这么要紧？",
+     "start": 17.544,
+     "dur": 6.314
+    }
+   ]
+  },
+  {
+   "id": "line",
+   "title": "Our line",
+   "zh": "我们的总线",
+   "start": 25.458,
+   "dur": 53.24,
+   "beats": [
+    {
+     "text": "Every episode uses the same small line.",
+     "zh": "每一集都用同一条小总线。",
+     "start": 0.9,
+     "dur": 3.8
+    },
+    {
+     "text": "One master, then three slaves on one cable.",
+     "zh": "一个主站，后面一根网线串着三个从站。",
+     "start": 5.3,
+     "dur": 4.41
+    },
+    {
+     "text": "Master: the controller that sends commands. Slave: a device that obeys and reports.",
+     "zh": "主站：发命令的控制器。从站：听命令、回数据的设备。",
+     "start": 10.31,
+     "dur": 6.252
+    },
+    {
+     "text": "Slave 1 is an analog input card. Slaves 2 and 3 are joint drives, J1 and J2.",
+     "zh": "从站 1 是模拟量采集卡，从站 2 和 3 是两个关节驱动器：J1、J2。",
+     "start": 17.162,
+     "dur": 7.991
+    },
+    {
+     "text": "The master is real open-source code, SOEM. The slaves are simulated chips.",
+     "zh": "主站是真实的开源代码 SOEM，从站是模拟出来的芯片。",
+     "start": 25.753,
+     "dur": 5.817
+    },
+    {
+     "text": "Every number in this course comes from running it.",
+     "zh": "这门课里的每个数字，都来自真实运行。",
+     "start": 32.17,
+     "dur": 4.513
+    },
+    {
+     "text": "Every 1 ms, the master sends J1 and J2 a new target position.",
+     "zh": "主站每 1 毫秒给 J1、J2 发一个新的目标位置。",
+     "start": 37.283,
+     "dur": 6.252
+    },
+    {
+     "text": "Both follow the same slow wave, so they should always be in the same place.",
+     "zh": "两个关节走同一条缓慢的正弦曲线，所以它们应该永远在同一个位置。",
+     "start": 44.135,
+     "dur": 7.505
+    }
+   ]
+  },
+  {
+   "id": "error",
+   "title": "Error = speed × time",
+   "zh": "误差 = 速度 × 时间",
+   "start": 78.698,
+   "dur": 47.691,
+   "beats": [
+    {
+     "text": "A moving joint does not wait for you.",
+     "zh": "运动中的关节不会等你。",
+     "start": 0.9,
+     "dur": 4.078
+    },
+    {
+     "text": "Apply a target late, and the joint is behind by speed × lateness.",
+     "zh": "目标晚一点生效，关节就落后：落后量 = 速度 × 晚了多久。",
+     "start": 5.578,
+     "dur": 6.252
+    },
+    {
+     "text": "A machine tool at F1000 moves 1000 mm per minute: about 16.7 mm per second.",
+     "zh": "机床走 F1000：每分钟 1000 毫米，约每秒 16.7 毫米。",
+     "start": 12.43,
+     "dur": 7.122
+    },
+    {
+     "text": "1 ms late: 16.7 mm/s × 0.001 s ≈ 0.017 mm, about 17 µm.",
+     "zh": "晚 1 毫秒：16.7 mm/s × 0.001 s ≈ 0.017 mm，约 17 微米。",
+     "start": 20.152,
+     "dur": 6.687
+    },
+    {
+     "text": "A robot joint turning 180° per second: 1 ms late is 0.18°.",
+     "zh": "机器人关节每秒转 180°：晚 1 毫秒就是 0.18°。",
+     "start": 27.439,
+     "dur": 5.817
+    },
+    {
+     "text": "At the end of a 0.5 m arm, 0.18° is about 1.6 mm.",
+     "zh": "在 0.5 米长的手臂末端，0.18° 约等于 1.6 毫米。",
+     "start": 33.856,
+     "dur": 6.252
+    },
+    {
+     "text": "For a moving machine, a timing error is a position error.",
+     "zh": "对运动中的机器来说，时间误差就是位置误差。",
+     "start": 40.708,
+     "dur": 5.383
+    }
+   ]
+  },
+  {
+   "id": "two",
+   "title": "Two kinds of timing error",
+   "zh": "两种时间误差",
+   "start": 126.389,
+   "dur": 36.057,
+   "beats": [
+    {
+     "text": "Timing can go wrong in two different ways.",
+     "zh": "时间可以错在两个地方。",
+     "start": 0.9,
+     "dur": 4.078
+    },
+    {
+     "text": "Skew: within one cycle, J1 and J2 act at different moments.",
+     "zh": "偏差（skew）：同一个周期里，J1 和 J2 动作的时刻不一样。",
+     "start": 5.578,
+     "dur": 5.383
+    },
+    {
+     "text": "Jitter: the cycle itself wobbles. 1 ms becomes 0.8, then 1.2.",
+     "zh": "抖动（jitter）：周期本身在晃。1 毫秒一会儿变 0.8，一会儿变 1.2。",
+     "start": 11.561,
+     "dur": 5.383
+    },
+    {
+     "text": "Skew makes the joints disagree with each other.",
+     "zh": "偏差让关节之间对不上。",
+     "start": 17.544,
+     "dur": 4.078
+    },
+    {
+     "text": "Jitter makes the whole motion stumble, even when the joints agree.",
+     "zh": "抖动让整个动作磕磕绊绊，哪怕关节彼此一致。",
+     "start": 22.222,
+     "dur": 5.383
+    },
+    {
+     "text": "Like a band that plays together, but follows a conductor whose beat wobbles.",
+     "zh": "像一支乐队：大家彼此很齐，但指挥的拍子忽快忽慢。",
+     "start": 28.205,
+     "dur": 6.252
+    }
+   ]
+  },
+  {
+   "id": "canopen",
+   "title": "How CANopen handles it",
+   "zh": "CANopen 的做法",
+   "start": 162.446,
+   "dur": 57.888,
+   "beats": [
+    {
+     "text": "Send each motor its command in turn, and the first moves before the last one hears.",
+     "zh": "如果挨个给电机发命令，第一个已经动了，最后一个才收到。",
+     "start": 0.9,
+     "dur": 7.557
+    },
+    {
+     "text": "That is skew. CANopen's CSP mode fixes it with one broadcast.",
+     "zh": "这就是偏差。CANopen 的 CSP 模式用一条广播来解决。",
+     "start": 9.057,
+     "dur": 5.383
+    },
+    {
+     "text": "First each drive gets its target. Then one SYNC message, ID 0x80, says: everyone, go.",
+     "zh": "先把目标分别发给每个驱动器，再发一条 SYNC 报文（ID 0x80）：大家一起动。",
+     "start": 15.04,
+     "dur": 7.122
+    },
+    {
+     "text": "One message reaches every drive together, so skew is small.",
+     "zh": "一条报文同时到达所有驱动器，偏差就小了。",
+     "start": 22.762,
+     "dur": 4.948
+    },
+    {
+     "text": "But when does SYNC leave? When the master's software timer fires.",
+     "zh": "但 SYNC 什么时候发出？取决于主站的软件定时器。",
+     "start": 28.31,
+     "dur": 5.383
+    },
+    {
+     "text": "If the bus is busy, SYNC waits. One 8-byte CAN frame takes about 0.1 ms at 1 Mbit/s.",
+     "zh": "总线正忙，SYNC 就得等。1 Mbit/s 下，一个 8 字节的 CAN 帧约要 0.1 毫秒。",
+     "start": 34.293,
+     "dur": 8.426
+    },
+    {
+     "text": "Then each drive reacts through an interrupt, which adds its own delay.",
+     "zh": "每个驱动器还要经过中断才响应，又添一段延迟。",
+     "start": 43.319,
+     "dur": 5.817
+    },
+    {
+     "text": "So SYNC fixes skew, not jitter. Every drive inherits the master's wobble.",
+     "zh": "所以 SYNC 治了偏差，治不了抖动：每个驱动器都继承了主站的晃动。",
+     "start": 49.736,
+     "dur": 6.552
+    }
+   ]
+  },
+  {
+   "id": "guess",
+   "title": "Guess first",
+   "zh": "先猜一猜",
+   "start": 220.334,
+   "dur": 21.91,
+   "beats": [
+    {
+     "text": "Back on our line. First, the drives act the moment new targets arrive.",
+     "zh": "回到我们的总线。先让驱动器在新目标到达的那一刻动作。",
+     "start": 0.9,
+     "dur": 6.314
+    },
+    {
+     "text": "The master tries to send exactly every 1 ms.",
+     "zh": "主站尽量每 1 毫秒准时发一次。",
+     "start": 7.814,
+     "dur": 4.513
+    },
+    {
+     "text": "Guess: how far from 1 ms will the real cycles land?",
+     "zh": "猜一猜：实际的周期会偏离 1 毫秒多少？",
+     "start": 12.927,
+     "dur": 7.383
+    }
+   ]
+  },
+  {
+   "id": "run",
+   "title": "The real run",
+   "zh": "真实运行",
+   "start": 242.244,
+   "dur": 68.858,
+   "beats": [
+    {
+     "text": "3 seconds of running: about 2,500 cycles measured at J1.",
+     "zh": "运行 3 秒：在 J1 上测到约 2500 个周期。",
+     "start": 0.9,
+     "dur": 4.948
+    },
+    {
+     "text": "Most cycles stay near 1 ms. But some come hundreds of microseconds early or late.",
+     "zh": "大多数周期在 1 毫秒附近，但总有一些早到或晚到几百微秒。",
+     "start": 6.448,
+     "dur": 7.122
+    },
+    {
+     "text": "The spread, one standard deviation, is tens of microseconds, in every run.",
+     "zh": "离散程度（一个标准差）每次运行都是几十微秒。",
+     "start": 14.17,
+     "dur": 5.817
+    },
+    {
+     "text": "The wobble comes from the master: an ordinary Mac, not a real-time system.",
+     "zh": "这些晃动来自主站：一台普通的 Mac，不是实时系统。",
+     "start": 20.587,
+     "dur": 6.252
+    },
+    {
+     "text": "A real-time OS makes it much smaller, but never zero.",
+     "zh": "换成实时操作系统能小很多，但永远不会是零。",
+     "start": 27.439,
+     "dur": 5.124
+    },
+    {
+     "text": "Now J1 against J2: they act 310 ns apart, in every cycle.",
+     "zh": "再看 J1 和 J2 之间：每个周期都相差 310 纳秒。",
+     "start": 33.163,
+     "dur": 5.817
+    },
+    {
+     "text": "310 ns is the simulated cable and chip delay. One frame passes J1, then J2.",
+     "zh": "310 纳秒是模拟的网线加芯片延迟：同一帧先经过 J1，再经过 J2。",
+     "start": 39.58,
+     "dur": 7.122
+    },
+    {
+     "text": "So skew is tiny. Episode 3 shows how one frame does that.",
+     "zh": "所以偏差很小。一帧怎么做到这一点，第 3 集再讲。",
+     "start": 47.302,
+     "dur": 5.817
+    },
+    {
+     "text": "But the jitter goes straight through to the motors.",
+     "zh": "可是抖动原封不动地传给了电机。",
+     "start": 53.719,
+     "dur": 4.513
+    },
+    {
+     "text": "At 180°/s, a cycle 0.2 ms late leaves J1 0.036° behind: about 0.3 mm at the arm tip.",
+     "zh": "以每秒 180° 计，晚到 0.2 毫秒的周期让 J1 落后 0.036°，在手臂末端约 0.3 毫米。",
+     "start": 58.832,
+     "dur": 8.426
+    }
+   ]
+  },
+  {
+   "id": "dc",
+   "title": "What EtherCAT does instead",
+   "zh": "EtherCAT 的做法",
+   "start": 311.102,
+   "dur": 69.759,
+   "beats": [
+    {
+     "text": "Same line, one change: each drive acts on its own clock.",
+     "zh": "同一条总线，只改一处：每个驱动器按自己的时钟动作。",
+     "start": 0.9,
+     "dur": 5.838
+    },
+    {
+     "text": "Every slave chip has a clock. EtherCAT keeps all those clocks in step.",
+     "zh": "每个从站芯片里都有一个时钟。EtherCAT 让这些时钟步调一致。",
+     "start": 7.338,
+     "dur": 6.252
+    },
+    {
+     "text": "This is called the Distributed Clock, DC for short.",
+     "zh": "这叫分布式时钟（Distributed Clock），简称 DC。",
+     "start": 14.19,
+     "dur": 4.513
+    },
+    {
+     "text": "Every 1 ms by its own clock, each drive fires a pulse called SYNC0, and acts on it.",
+     "zh": "每个驱动器按自己的时钟，每 1 毫秒产生一个叫 SYNC0 的脉冲，就在这一刻动作。",
+     "start": 19.303,
+     "dur": 8.426
+    },
+    {
+     "text": "The frame only has to arrive before SYNC0. Exactly when no longer matters.",
+     "zh": "帧只要在 SYNC0 之前到就行，具体哪一刻到已经无所谓。",
+     "start": 28.329,
+     "dur": 6.252
+    },
+    {
+     "text": "Same master, same Mac, the sending still wobbles.",
+     "zh": "主站还是那台 Mac，发送照样在晃。",
+     "start": 35.181,
+     "dur": 4.078
+    },
+    {
+     "text": "Cycle spread at the drives: about 5 ns, in every run.",
+     "zh": "驱动器上的周期离散：约 5 纳秒，每次运行都一样。",
+     "start": 39.859,
+     "dur": 5.383
+    },
+    {
+     "text": "Once the clocks settle, J1 and J2 act within about 10 ns of each other.",
+     "zh": "时钟稳定下来以后，J1 和 J2 动作的时刻相差在 10 纳秒左右。",
+     "start": 45.842,
+     "dur": 7.122
+    },
+    {
+     "text": "From tens of microseconds to a few nanoseconds: about ten thousand times tighter.",
+     "zh": "从几十微秒到几纳秒：大约收紧了一万倍。",
+     "start": 53.564,
+     "dur": 6.252
+    },
+    {
+     "text": "Note: how fast the clocks settle comes from our simulated chip, not a real one.",
+     "zh": "注意：时钟多快能稳定，取决于我们模拟的芯片，不是某款真实芯片的数据。",
+     "start": 60.416,
+     "dur": 7.743
+    }
+   ]
+  },
+  {
+   "id": "road",
+   "title": "How is that possible?",
+   "zh": "这是怎么做到的？",
+   "start": 380.861,
+   "dur": 32.424,
+   "beats": [
+    {
+     "text": "Getting there takes four questions, one at a time.",
+     "zh": "要做到这一点，需要回答四个问题，一个一个来。",
+     "start": 0.9,
+     "dur": 5.124
+    },
+    {
+     "text": "How is one cable already a ring? Episode 2.",
+     "zh": "一根网线，怎么就已经是一个环？第 2 集。",
+     "start": 6.624,
+     "dur": 4.513
+    },
+    {
+     "text": "How does one frame serve every slave without stopping? Episode 3.",
+     "zh": "一帧怎么不停下来，就服务了每一个从站？第 3 集。",
+     "start": 11.737,
+     "dur": 5.383
+    },
+    {
+     "text": "How does the line start up and agree who sends what? Episode 4.",
+     "zh": "总线怎么启动，怎么约定谁收发哪些数据？第 4 集。",
+     "start": 17.72,
+     "dur": 6.252
+    },
+    {
+     "text": "How do clocks in different chips agree to a few nanoseconds? Episode 5.",
+     "zh": "不同芯片里的时钟，怎么对齐到几纳秒？第 5 集。",
+     "start": 24.572,
+     "dur": 6.252
+    }
+   ]
+  },
+  {
+   "id": "recap",
+   "title": "Recap",
+   "zh": "本集要点",
+   "start": 413.285,
+   "dur": 24.196,
+   "beats": [
+    {
+     "text": "One: for a moving machine, timing error is position error. Speed × time.",
+     "zh": "一、对运动中的机器，时间误差就是位置误差：速度 × 时间。",
+     "start": 0.9,
+     "dur": 6.252
+    },
+    {
+     "text": "Two: skew and jitter differ. One is between joints, the other is the beat itself.",
+     "zh": "二、偏差和抖动是两回事：一个在关节之间，一个是节拍本身。",
+     "start": 7.752,
+     "dur": 7.122
+    },
+    {
+     "text": "Three: acting when a message arrives inherits the sender's jitter. A shared clock removes it.",
+     "zh": "三、收到报文就动作，会继承发送方的抖动；共享的时钟才能去掉它。",
+     "start": 15.474,
+     "dur": 7.122
+    }
+   ]
+  },
+  {
+   "id": "turn",
+   "title": "Your turn",
+   "zh": "你来算",
+   "start": 437.481,
+   "dur": 25.1,
+   "beats": [
+    {
+     "text": "A joint turns at 90° per second. One cycle arrives 0.3 ms late.",
+     "zh": "一个关节每秒转 90°，某个周期晚到了 0.3 毫秒。",
+     "start": 0.9,
+     "dur": 6.252
+    },
+    {
+     "text": "How far behind is it, in degrees?",
+     "zh": "它落后了多少度？",
+     "start": 7.752,
+     "dur": 5.8
+    },
+    {
+     "text": "90°/s × 0.0003 s = 0.027°.",
+     "zh": "90°/s × 0.0003 s = 0.027°。",
+     "start": 14.152,
+     "dur": 3.8
+    },
+    {
+     "text": "Next: one cable, and why it is already a ring.",
+     "zh": "下一集：一根网线，为什么它已经是一个环。",
+     "start": 18.552,
+     "dur": 4.948
+    }
+   ]
+  }
+ ]
+};
+var W = 1920, H = 1080;
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const C = {bg:'#0B1120', bg2:'#16223E', ink:'#F3EBDD', dim:'#8D98B0', faint:'#3A4766', line:'#28344F', panel:'#121B31', panel2:'#1A2642',
+  sky:'#6EC8FF', coral:'#FF7A59', gold:'#FFC24B', mint:'#5EE0A8', red:'#FF4D5E', violet:'#B69CFF'};
+const F = {disp:'"Fraunces", Georgia, serif', sans:'"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif', mono:'"JetBrains Mono", Menlo, monospace', zh:'"Noto Sans SC", "PingFang SC", sans-serif'};
+
+/* ---------- math ---------- */
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const ramp = (t,a,b) => clamp((t-a)/(b-a), 0, 1);
+const eio = x => x<.5 ? 4*x*x*x : 1 - Math.pow(-2*x+2,3)/2;
+const eo = x => 1 - Math.pow(1-x,3);
+const eback = x => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); };
+const lerp = (a,b,t) => a + (b-a)*t;
+const rnd = i => { const x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); };
+const rgba = (hex,a) => { const n = parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+function mixHex(a,b,t){ const x=parseInt(a.slice(1),16), y=parseInt(b.slice(1),16); const c=(s)=>Math.round(lerp(x>>s&255, y>>s&255, t)); return '#'+((c(16)<<16)|(c(8)<<8)|c(0)).toString(16).padStart(6,'0'); }
+
+/* ---------- drawing primitives ---------- */
+function text(s,x,y,o={}){
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.font = `${o.weight||500} ${o.size||28}px ${o.font||F.sans}`;
+  ctx.fillStyle = o.color || C.ink; ctx.textAlign = o.align || 'center'; ctx.textBaseline = o.base || 'middle';
+  if (o.ls) ctx.letterSpacing = o.ls + 'px';
+  if (o.shadow){ ctx.shadowColor = o.shadow; ctx.shadowBlur = 24; }
+  ctx.fillText(s,x,y); ctx.restore();
+}
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+function glow(x,y,r,color,a=1){ const g = ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0, rgba(color,.5*a)); g.addColorStop(1, rgba(color,0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+function dot(x,y,r,color,a=1){ ctx.save(); ctx.globalAlpha *= a; glow(x,y,r*3.6,color,.9); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function qpt(a,b,bend,t){ const mx=(a.x+b.x)/2, my=(a.y+b.y)/2, dx=b.x-a.x, dy=b.y-a.y, cx=mx-dy*bend, cy=my+dx*bend, u=1-t; return {x:u*u*a.x+2*u*t*cx+t*t*b.x, y:u*u*a.y+2*u*t*cy+t*t*b.y}; }
+function packet(a,b,p,color,o={}){
+  if (p <= 0 || p >= 1) return null;
+  const r = o.r || 9, bend = o.bend || 0;
+  ctx.save();
+  for (let i=10;i>=1;i--){ const q = qpt(a,b,bend,Math.max(0,p - .012*i)); ctx.globalAlpha = .045*(11-i); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(q.x,q.y,r*(1-i*.06),0,Math.PI*2); ctx.fill(); }
+  ctx.restore();
+  const q = qpt(a,b,bend,p);
+  if (o.shape === 'sq'){ ctx.save(); glow(q.x,q.y,r*3.4,color); ctx.fillStyle = color; rr(q.x-r,q.y-r,2*r,2*r,3); ctx.fill(); ctx.restore(); }
+  else dot(q.x,q.y,r,color);
+  if (o.label) text(o.label, q.x, q.y - r - 22, {size:o.ls||24, font:F.mono, weight:700, color});
+  return q;
+}
+function burst(x,y,k,color=C.red){ // k in 0..1
+  if (k <= 0 || k >= 1) return;
+  ctx.save(); ctx.globalAlpha *= 1-k;
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x,y,14+60*eo(k),0,Math.PI*2); ctx.stroke();
+  const s = 16; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke();
+  ctx.restore();
+}
+function cross(x,y,s,color,lw=7,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke(); ctx.restore(); }
+function check(x,y,s,color,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x-s,y); ctx.lineTo(x-s*.3,y+s*.7); ctx.lineTo(x+s,y-s*.6); ctx.stroke(); ctx.restore(); }
+function ringArc(x,y,r,frac,color,lw=6,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = rgba(color,.18); ctx.lineWidth = lw; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle = color; ctx.lineCap='round'; ctx.beginPath(); ctx.arc(x,y,r,-Math.PI/2,-Math.PI/2 + Math.PI*2*clamp(frac,0,1)); ctx.stroke(); ctx.restore(); }
+function pulse(x,y,k,color,r0=40,r1=120){ if (k<=0||k>=1) return; ctx.save(); ctx.globalAlpha *= (1-k); ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x,y,lerp(r0,r1,eo(k)),0,Math.PI*2); ctx.stroke(); ctx.restore(); }
+function tag(s,x,y,color,o={}){
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.font = `700 ${o.size||22}px ${F.mono}`; const w = ctx.measureText(s).width + 28, h = (o.size||22) + 18;
+  rr(x-w/2, y-h/2, w, h, h/2); ctx.fillStyle = rgba(color,.16); ctx.fill(); ctx.strokeStyle = rgba(color,.7); ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s,x,y+1); ctx.restore();
+}
+function server(x,y,w,h,o={}){
+  const st = o.state || 'ok', a = o.alpha ?? 1;
+  const edge = st==='dead' ? C.red : st==='hot' ? C.coral : o.edge || C.sky;
+  ctx.save(); ctx.globalAlpha *= a;
+  if (st !== 'dead') glow(x,y,Math.max(w,h)*.9, edge, st==='hot'?.35:.18);
+  const g = ctx.createLinearGradient(0,y-h/2,0,y+h/2); g.addColorStop(0, st==='dead'?'#2A1822':C.panel2); g.addColorStop(1, st==='dead'?'#1A1018':C.panel);
+  rr(x-w/2,y-h/2,w,h,14); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = rgba(edge, st==='dead'?.8:.75); ctx.stroke();
+  const rows = o.rows ?? 3, pad = 16, rh = (h - pad*2) / rows;
+  for (let i=0;i<rows;i++){
+    const ry = y - h/2 + pad + rh*i + rh/2;
+    rr(x-w/2+pad, ry-rh*.32, w-pad*2, rh*.64, 6); ctx.fillStyle = 'rgba(255,255,255,.035)'; ctx.fill();
+    const on = st==='dead' ? .12 : .35 + .65*(rnd(Math.floor((o.t||0)*6)+i*17+(o.seed||0))>.4 ? 1 : .3);
+    ctx.fillStyle = rgba(st==='dead'?C.red:(o.led||C.mint), on); ctx.beginPath(); ctx.arc(x+w/2-pad-12, ry, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = rgba(C.dim, .35); for (let k=0;k<3;k++) ctx.fillRect(x-w/2+pad+14+k*16, ry-2, 9, 4);
+  }
+  if (o.prog != null && o.prog > 0){ rr(x-w/2+pad, y+h/2-12, (w-pad*2)*o.prog, 5, 2.5); ctx.fillStyle = C.gold; ctx.fill(); }
+  ctx.restore();
+  if (o.label) text(o.label, x, y + h/2 + 28, {size:o.lsize||24, font:F.mono, weight:500, color:st==='dead'?C.red:C.dim, alpha:a});
+  if (st === 'dead') cross(x, y, Math.min(w,h)*.22, C.red, 9, a*.9);
+}
+function user(x,y,a=1,color=C.dim){
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x,y-16,15,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y+26,27,Math.PI,0); ctx.fill(); ctx.restore();
+}
+function hexagon(x,y,r,a=1){
+  ctx.save(); ctx.globalAlpha *= a; glow(x,y,r*2.2,C.gold,.3);
+  ctx.beginPath(); for (let i=0;i<6;i++){ const an = Math.PI/6 + i*Math.PI/3; const px = x + r*Math.cos(an), py = y + r*Math.sin(an); i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); } ctx.closePath();
+  ctx.fillStyle = C.panel2; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = C.gold; ctx.stroke();
+  ctx.strokeStyle = rgba(C.gold,.8); ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for (let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(x-r*.35, y); ctx.lineTo(x+r*.35, y+i*r*.35); ctx.stroke(); }
+  ctx.restore();
+}
+function nodeCircle(x,y,r,o={}){
+  const role = o.role || 'follower', a = o.alpha ?? 1;
+  const col = role==='leader' ? C.gold : role==='candidate' ? C.coral : role==='dead' ? C.red : C.sky;
+  ctx.save(); ctx.globalAlpha *= a;
+  if (role !== 'dead') glow(x,y,r*2.1,col, role==='follower'?.25:.55);
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle = role==='dead' ? '#241722' : role==='leader' ? mixHex(C.panel2,C.gold,.22) : C.panel2; ctx.fill();
+  ctx.lineWidth = role==='follower' ? 3 : 5; ctx.strokeStyle = rgba(col, role==='dead'?.6:1); ctx.stroke();
+  ctx.restore();
+  text(o.name, x, y-6, {size:34, font:F.mono, weight:700, color: role==='dead'?C.faint:C.ink, alpha:a});
+  if (o.sub) text(o.sub, x, y+24, {size:18, font:F.mono, weight:500, color:C.dim, alpha:a});
+  if (role === 'leader'){ // crown
+    ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.gold; const cy = y - r - 26, s = 22;
+    ctx.beginPath(); ctx.moveTo(x-s,cy+10); ctx.lineTo(x-s,cy-6); ctx.lineTo(x-s*.5,cy+2); ctx.lineTo(x,cy-12); ctx.lineTo(x+s*.5,cy+2); ctx.lineTo(x+s,cy-6); ctx.lineTo(x+s,cy+10); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  if (role === 'dead') cross(x,y,r*.55,C.red,8,a*.9);
+}
+function wrapLines(s, maxW){ const words = s.split(' '), out = []; let cur = ''; for (const w of words){ const t = cur ? cur+' '+w : w; if (ctx.measureText(t).width > maxW && cur){ out.push(cur); cur = w; } else cur = t; } if (cur) out.push(cur); return out; }
+
+/* ---------- background ---------- */
+function background(t){
+  ctx.fillStyle = C.bg; ctx.fillRect(0,0,W,H);
+  const g = ctx.createRadialGradient(960,480,80,960,480,1150); g.addColorStop(0, C.bg2); g.addColorStop(1, rgba(C.bg,0)); ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = rgba(C.faint,.35); const off = (t*6)%48;
+  for (let x = 24; x < W; x += 48) for (let y = 24 + off; y < H; y += 48) ctx.fillRect(x, y, 2, 2);
+  const v = ctx.createRadialGradient(960,540,500,960,540,1250); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.55)'); ctx.fillStyle = v; ctx.fillRect(0,0,W,H);
+}
+
+/* ---------- more primitives: panels, files, disks, arrows, chips ---------- */
+function panel(x,y,w,h,o={}){ ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1); rr(x-w/2,y-h/2,w,h,o.r||14); ctx.fillStyle = o.fill || C.panel; ctx.fill(); ctx.lineWidth = o.lw || 2; ctx.strokeStyle = o.edge || C.line; if (o.dash) ctx.setLineDash(o.dash); ctx.stroke(); ctx.restore(); }
+function fileIcon(x,y,w,h,o={}){
+  const a = o.alpha ?? 1, c = o.color || C.sky, f = Math.min(18, w*.22);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; if (o.glow) glow(x,y,Math.max(w,h)*.9,c,o.glow);
+  ctx.beginPath(); ctx.moveTo(x-w/2,y-h/2); ctx.lineTo(x+w/2-f,y-h/2); ctx.lineTo(x+w/2,y-h/2+f); ctx.lineTo(x+w/2,y+h/2); ctx.lineTo(x-w/2,y+h/2); ctx.closePath();
+  ctx.fillStyle = o.fill || C.panel2; ctx.fill(); if (o.dash) ctx.setLineDash(o.dash); ctx.strokeStyle = c; ctx.lineWidth = o.lw || 2.5; ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x+w/2-f,y-h/2); ctx.lineTo(x+w/2-f,y-h/2+f); ctx.lineTo(x+w/2,y-h/2+f); ctx.stroke();
+  if (o.rows){ const n = o.rows, rh = Math.min(30, (h-36)/Math.max(n,1)); for (let k=0;k<n;k++){ const ry = y - h/2 + 22 + k*rh + rh/2, rc = o.rowColors ? o.rowColors[k] : c; rr(x-w/2+16, ry-rh*.22, (w-40)*(.55 + .4*rnd(k*7+(o.seed||0))), rh*.44, 4); ctx.fillStyle = rgba(rc,.75); ctx.fill(); } }
+  ctx.restore();
+  if (o.label) text(o.label, x, y + (o.ly || 0), {size:o.size||20, font:F.mono, weight:700, color:o.tcolor||c, alpha:a});
+}
+function cylinder(x,y,w,h,o={}){
+  const a = o.alpha ?? 1, c = o.color || C.sky, e = w*.16; if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; if (o.glow !== 0) glow(x,y,Math.max(w,h)*.85,c,o.glow ?? .2);
+  ctx.beginPath(); ctx.moveTo(x-w/2,y-h/2); ctx.lineTo(x-w/2,y+h/2); ctx.ellipse(x,y+h/2,w/2,e,0,Math.PI,0,true); ctx.lineTo(x+w/2,y-h/2); ctx.closePath();
+  ctx.fillStyle = C.panel2; ctx.fill(); ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x,y-h/2,w/2,e,0,0,Math.PI*2); ctx.fillStyle = mixHex(C.panel2,c,.18); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  if (o.inner) text(o.inner, x, y + e*.6, {size:o.isize||18, font:F.mono, weight:700, color:o.icolor||C.ink, alpha:a});
+  if (o.label) text(o.label, x, y + h/2 + e + 26, {size:o.size||22, font:F.mono, weight:700, color:o.tcolor||C.dim, alpha:a});
+}
+function arrow(a,b,color,o={}){
+  const p = o.p ?? 1, al = o.alpha ?? 1; if (p <= 0 || al <= 0) return;
+  const x = lerp(a.x,b.x,p), y = lerp(a.y,b.y,p), an = Math.atan2(b.y-a.y, b.x-a.x), s = o.head || 14;
+  ctx.save(); ctx.globalAlpha *= al; ctx.strokeStyle = color; ctx.lineWidth = o.lw || 3; ctx.lineCap = 'round'; if (o.dash) ctx.setLineDash(o.dash);
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(x - Math.cos(an)*s*.6, y - Math.sin(an)*s*.6); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x - s*Math.cos(an-.45), y - s*Math.sin(an-.45)); ctx.lineTo(x - s*Math.cos(an+.45), y - s*Math.sin(an+.45)); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function chip(s,x,y,c,k=1,o={}){ if (k <= 0) return; ctx.save(); ctx.translate(x,y); ctx.scale(k,k); tag(s,0,0,c,{size:o.size||20, alpha:o.alpha ?? 1}); ctx.restore(); }
+function lockIcon(x,y,s,color,a=1){ ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = s*.16; ctx.beginPath(); ctx.arc(x, y - s*.15, s*.36, Math.PI, 0); ctx.stroke(); rr(x - s*.55, y - s*.15, s*1.1, s*.85, s*.14); ctx.fillStyle = color; ctx.fill(); ctx.restore(); }
+// piecewise-linear map through [t, v] knots
+function knots(t, ks){ if (t <= ks[0][0]) return ks[0][1]; for (let i=1;i<ks.length;i++) if (t <= ks[i][0]) return lerp(ks[i-1][1], ks[i][1], (t - ks[i-1][0])/(ks[i][0] - ks[i-1][0])); return ks[ks.length-1][1]; }
+
+/* ---------- 3Blue1Brown-style primitives: formulas, joints, plots, gears, code ----------
+   eq(parts,cx,y,size,{left,glow,alpha}) parts = [str, color, alpha?, sub?] — colour each symbol by meaning, fade terms in one at a time
+   wipe(p,x,y,w,h,fn) reveals whatever fn draws left→right (the 'Write' feel); brace(x1,x2,y,label,color,a) a curly brace with a label
+   arm/arcArrow/springArc (rotating links, torques, springs), axes/plot (graphs drawn progressively), gear, codeBox, label2 (English over Chinese)
+   ------------------------------------------------------------------------------------------ */
+const DEG = Math.PI / 180;
+// math-ish font for formulas
+const MF = (size, w = 600) => `italic ${w} ${size}px ${F.disp}`;
+// parts: [string, color, alpha?, sub?]; drawn left→right, centred on cx (or left-aligned with o.left)
+function eq(parts, cx, y, size, o = {}) {
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  const wOf = p => { ctx.font = MF(p[3] ? size * .55 : size); return ctx.measureText(p[0]).width; };
+  const total = parts.reduce((s, p) => s + wOf(p), 0);
+  let x = o.left ? cx : cx - total / 2;
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  for (const p of parts) {
+    const w = wOf(p), a = p[2] ?? 1;
+    if (a > 0) { ctx.save(); ctx.globalAlpha *= a; ctx.font = MF(p[3] ? size * .55 : size); ctx.fillStyle = p[1];
+      if (o.glow && p[1] !== C.dim) { ctx.shadowColor = rgba(p[1], .55); ctx.shadowBlur = 18; }
+      ctx.fillText(p[0], x, y + (p[3] ? size * .28 : 0)); ctx.restore(); }
+    x += w;
+  }
+  ctx.restore(); return total;
+}
+// a joint: pivot at (px,py), link of length L at angle th (radians, CCW from +x, screen y up)
+const tip = (px, py, L, th) => ({x: px + L * Math.cos(th), y: py - L * Math.sin(th)});
+function arm(px, py, L, th, o = {}) {
+  const a = o.alpha ?? 1; if (a <= 0) return;
+  const e = tip(px, py, L, th), c = o.color || C.sky;
+  ctx.save(); ctx.globalAlpha *= a; ctx.lineCap = 'round';
+  if (o.ghost) { ctx.setLineDash([14, 14]); ctx.strokeStyle = rgba(c, .8); ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(e.x, e.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.x, e.y, o.mass || 22, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return; }
+  glow((px + e.x) / 2, (py + e.y) / 2, L * .6, c, .25);
+  ctx.strokeStyle = c; ctx.lineWidth = o.lw || 18; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(e.x, e.y); ctx.stroke();
+  ctx.fillStyle = C.panel2; ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(px, py, 24, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = o.massColor || C.ink; ctx.beginPath(); ctx.arc(e.x, e.y, o.mass || 22, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+// curved arrow along a circle of radius r from angle a0 to a1 (math angles)
+function arcArrow(px, py, r, a0, a1, color, o = {}) {
+  const al = o.alpha ?? 1; if (al <= 0 || Math.abs(a1 - a0) < .01) return;
+  ctx.save(); ctx.globalAlpha *= al; ctx.strokeStyle = color; ctx.lineWidth = o.lw || 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(px, py, r, -a0, -a1, a1 > a0); ctx.stroke();
+  const dir = Math.sign(a1 - a0), e = tip(px, py, r, a1), tan = -a1 - dir * Math.PI / 2, s = o.head || 20;
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(e.x + Math.cos(tan) * s * .2, e.y + Math.sin(tan) * s * .2);
+  ctx.lineTo(e.x - Math.cos(tan - .5) * s, e.y - Math.sin(tan - .5) * s); ctx.lineTo(e.x - Math.cos(tan + .5) * s, e.y - Math.sin(tan + .5) * s); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+// coil spring drawn along an arc of radius r between angles a0 and a1
+function springArc(px, py, r, a0, a1, color, o = {}) {
+  const al = o.alpha ?? 1; if (al <= 0) return;
+  const n = 120, coils = Math.max(4, Math.abs(a1 - a0) / DEG / 4), amp = o.amp || 16;
+  ctx.save(); ctx.globalAlpha *= al; ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.beginPath();
+  for (let i = 0; i <= n; i++) { const u = i / n, an = lerp(a0, a1, u), rad = r + amp * Math.sin(u * coils * Math.PI * 2) * Math.min(1, u * 8, (1 - u) * 8);
+    const q = tip(px, py, rad, an); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.stroke(); ctx.restore();
+}
+// axes with origin at (x, y0): width w, half-height h
+function axes(x, y0, w, h, o = {}) {
+  const a = o.alpha ?? 1; if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.dim; ctx.lineWidth = 2.5;
+  arrow({x, y: y0 + (o.full ? h : 0)}, {x, y: y0 - h - 10}, C.dim, {lw: 2.5, head: 12});
+  arrow({x: x - (o.both ? w : 0), y: y0}, {x: x + w + 10, y: y0}, C.dim, {lw: 2.5, head: 12});
+  ctx.restore();
+  if (o.xl) text(o.xl, x + w + 10, y0 + 34, {size: 24, font: F.mono, color: C.dim, align: 'right', alpha: a});
+  if (o.yl) text(o.yl, x + 14, y0 - h - 10, {size: 26, font: F.mono, color: C.dim, align: 'left', alpha: a});
+}
+// plot fn(u) for u in [0, prog] mapped to x..x+w; value v ↦ y0 - v*k
+function plot(fn, x, y0, w, k, prog, color, o = {}) {
+  if (prog <= 0) return null;
+  ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1); ctx.strokeStyle = color; ctx.lineWidth = o.lw || 5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.shadowColor = rgba(color, .6); ctx.shadowBlur = 14; ctx.beginPath();
+  const n = 300; let q;
+  for (let i = 0; i <= n * prog; i++) { const u = i / n; q = {x: x + u * w, y: y0 - fn(u) * k}; i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.stroke(); ctx.restore();
+  return q;
+}
+function gear(x, y, r, teeth, rot, color, o = {}) {
+  const a = o.alpha ?? 1; if (a <= 0) return;
+  const depth = o.depth || 12, n = teeth * 4;
+  ctx.save(); ctx.globalAlpha *= a; glow(x, y, r * 1.4, color, .25); ctx.beginPath();
+  for (let i = 0; i <= n; i++) { const an = rot + i / n * Math.PI * 2, rad = (i % 4 === 1 || i % 4 === 2) ? r + depth : r;
+    const q = {x: x + rad * Math.cos(an), y: y + rad * Math.sin(an)}; i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }
+  ctx.closePath(); ctx.fillStyle = mixHex(C.panel2, color, .22); ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = rgba(color, .9); ctx.lineWidth = Math.max(3, r * .05);
+  const sp = o.spokes || 3;
+  for (let i = 0; i < sp; i++) { const an = rot + i / sp * Math.PI * 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + r * .78 * Math.cos(an), y + r * .78 * Math.sin(an)); ctx.stroke(); }
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, Math.max(6, r * .12), 0, Math.PI * 2); ctx.fill();
+  if (o.mark) { const q = {x: x + r * .78 * Math.cos(rot), y: y + r * .78 * Math.sin(rot)}; ctx.fillStyle = C.gold; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(7, r * .06), 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+// Every code pane reports itself while it is on screen: slides.mjs collects these into the 课件's code index.
+// A helper that draws real source calls codeShown({file, a, b, fn?, key?}) (lines a–b of the file); codeBox reports its title.
+const codeShown = info => { if (window.__codeSink) window.__codeSink(info); };
+// code panel; lines: [text, color?]; hl(i) → highlight 0..1, mark(i) → [glyph, color, alpha]
+function codeBox(x, y, w, title, lines, o = {}) {
+  const lh = 50, h = 90 + lines.length * lh, a = o.alpha ?? 1; if (a <= 0) return;
+  if (a > .5) codeShown({title, file: o.file, a: o.from, b: o.to});
+  panel(x + w / 2, y + h / 2, w, h, {alpha: a, fill: '#0E1628'});
+  ctx.save(); ctx.globalAlpha *= a;
+  [C.red, C.gold, C.mint].forEach((c, i) => { ctx.fillStyle = rgba(c, .7); ctx.beginPath(); ctx.arc(x + 30 + i * 26, y + 32, 7, 0, Math.PI * 2); ctx.fill(); });
+  ctx.restore();
+  text(title, x + 120, y + 33, {size: 22, font: F.mono, color: C.dim, align: 'left', alpha: a});
+  lines.forEach((l, i) => {
+    const ly = y + 90 + i * lh, h1 = o.hl ? o.hl(i) : 0;
+    if (h1 > 0) { ctx.save(); ctx.globalAlpha *= a * h1; rr(x + 14, ly - lh / 2 + 4, w - 28, lh - 8, 8); ctx.fillStyle = rgba(l[2] || C.gold, .14); ctx.fill(); ctx.fillStyle = l[2] || C.gold; ctx.fillRect(x + 14, ly - lh / 2 + 6, 5, lh - 12); ctx.restore(); }
+    const dimmed = o.hl ? .45 + .55 * Math.max(h1, o.base ?? 0) : 1;
+    text(l[0], x + 40, ly, {size: o.size || 27, font: F.mono, weight: 500, color: l[1] || C.ink, align: 'left', alpha: a * dimmed});
+    const m = o.mark && o.mark(i); if (m && m[2] > 0) text(m[0], x + w - 40, ly, {size: 30, font: F.mono, weight: 700, color: m[1], align: 'right', alpha: a * m[2]});
+  });
+  return h;
+}
+function label2(en, zh, x, y, o = {}) { // English over Chinese
+  const a = o.alpha ?? 1, c = o.color || C.ink;
+  text(en, x, y, {size: o.size || 30, weight: 600, color: c, align: o.align || 'center', alpha: a});
+  text(zh, x, y + (o.size || 30) * 1.15, {size: (o.size || 30) * .72, font: F.zh, color: C.dim, align: o.align || 'center', alpha: a});
+}
+// damped step response, ζ<1 : value goes 0 → 1
+const stepResp = (t, w, z) => { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z / Math.sqrt(1 - z * z) * Math.sin(wd * t)); };
+// reveal what fn() draws from left to right, p in 0..1 (a 'Write' animation for formulas, curves, rows of chips)
+function wipe(p, x, y, w, h, fn) { if (p <= 0) return; ctx.save(); ctx.beginPath(); ctx.rect(x, y, w * clamp(p, 0, 1), h); ctx.clip(); fn(); ctx.restore(); }
+// curly brace under (dir=1) or over (dir=-1) the span x1..x2 at height y, with a label
+function brace(x1, x2, y, label, color, a = 1, dir = 1) {
+  if (a <= 0) return; const m = (x1 + x2) / 2, d = 18 * dir;
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(x1, y); ctx.quadraticCurveTo(x1, y + d, x1 + 20, y + d); ctx.lineTo(m - 20, y + d); ctx.quadraticCurveTo(m, y + d, m, y + 2 * d);
+  ctx.quadraticCurveTo(m, y + d, m + 20, y + d); ctx.lineTo(x2 - 20, y + d); ctx.quadraticCurveTo(x2, y + d, x2, y); ctx.stroke(); ctx.restore();
+  if (label) text(label, m, y + 2 * d + 26 * dir, {size: 26, color, alpha: a, font: /[一-鿿]/.test(label) ? F.zh : F.sans});
+}
+// generated by data.py from real runs on vwire:chain3; do not edit
+const D = {"frame": {"hist": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 13, 24, 27, 30, 23, 58, 99, 933, 1104, 20, 26, 24, 19, 19, 30, 19, 18, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "lo": 400, "w": 25, "sd_us": 51.2, "min_us": 773, "max_us": 1245, "n": 2499, "out": 0, "strip": [1003.0, 997.0, 1001.0, 1001.0, 1000.0, 1000.0, 999.0, 1003.0, 996.0, 994.0, 1008.0, 998.0, 1001.0, 1000.0, 1004.0, 995.0, 1000.0, 1004.0, 999.0, 999.0, 1002.0, 996.0, 1004.0, 987.0, 1015.0, 996.0, 998.0, 1000.0, 1004.0, 996.0, 1003.0, 997.0, 1000.0, 1006.0, 993.0, 1009.0, 998.0, 978.0, 1033.0, 991.0], "skew_ns": 310, "sd_all_us": [51.2, 62.5, 43.8]}, "dc": {"hist": [0, 0, 0, 0, 0, 8, 541, 142, 29, 50, 79, 1155, 373, 15, 7, 1, 0, 0, 0, 0], "lo": -20, "w": 2, "sd_ns": 4.6, "settled_skew_ns": 10, "strip": [999.985, 999.984, 999.974, 999.985, 999.985, 999.974, 999.985, 999.984, 999.975, 999.984, 999.984, 999.976, 999.983, 999.985, 999.985, 999.975, 999.983, 999.985, 999.975, 999.984, 999.984, 999.986, 999.974, 999.985, 999.976, 999.981, 999.987, 999.986, 999.981, 999.976, 999.985, 999.985, 999.974, 999.985, 999.984, 999.974, 999.985, 999.987, 999.982, 999.975], "sd_all_ns": [4.6, 4.6, 4.4]}, "ratio": 9434};
+/* =========================================================
+   Episode 1 — The 1 ms problem. One scene per id in script.json; numbers from ep01_data.js (D), real runs.
+   Colour legend (the whole course):
+     gold   = the master and the commands it sends (targets, frames)
+     sky    = joint J1        violet = joint J2        dim = the analog card
+     coral  = jitter, lateness, error        mint = the distributed clock, SYNC0, "in step"
+   Canvas 1920×1080; content between y≈170 and y≈830.
+   ========================================================= */
+const SCN = {};
+
+/* ---------- episode helpers ---------- */
+const fade = (lt, t0, t1, d = .6) => eo(ramp(lt, t0, t0 + d)) * (t1 == null ? 1 : 1 - ramp(lt, t1 - .5, t1));
+function box(x, y, w, h, title, sub, color, a = 1, o = {}) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a;
+  glow(x, y, Math.max(w, h) * .75, color, o.glowA ?? .14);
+  rr(x - w / 2, y - h / 2, w, h, 16); ctx.fillStyle = o.fill || C.panel2; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = rgba(color, .85); ctx.stroke();
+  ctx.restore();
+  text(title, x, y - (sub ? 16 : 0), {size: o.size || 30, weight: 600, color: o.tcolor || C.ink, alpha: a});
+  if (sub) text(sub, x, y + 22, {size: 22, font: F.zh, color: C.dim, alpha: a});
+}
+// the course's running example: master → AI card → J1 → J2 on one cable
+const LN = {y: 470, xs: [330, 760, 1160, 1560], w: 250, h: 150};
+const LCOL = [C.gold, C.dim, C.sky, C.violet];
+const LNAME = [['Master', '主站'], ['Slave 1 · AI card', '从站 1 · 采集卡'], ['Slave 2 · J1', '从站 2 · 关节 J1'], ['Slave 3 · J2', '从站 3 · 关节 J2']];
+function lineDiagram(o = {}) {
+  const a = o.alpha ?? 1, y = o.y ?? LN.y, sh = o.show ?? [1, 1, 1, 1];
+  for (let i = 0; i < 3; i++) {
+    const k = Math.min(sh[i], sh[i + 1]); if (k <= 0) continue;
+    const x0 = LN.xs[i] + LN.w / 2, x1 = LN.xs[i + 1] - LN.w / 2;
+    ctx.save(); ctx.globalAlpha *= a * k; ctx.strokeStyle = C.faint; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(lerp(x0, x1, eo(k)), y); ctx.stroke(); ctx.restore();
+  }
+  if (o.mid) o.mid();
+  LN.xs.forEach((x, i) => box(x, y, LN.w, LN.h, LNAME[i][0], LNAME[i][1], LCOL[i], a * eo(sh[i]), {size: 26, fill: C.panel2}));
+}
+// a frame (packet) travelling along the cable from the master to slave k (1..3), p in 0..1
+function frameOnLine(p, k, color, a = 1, y = LN.y) {
+  if (p <= 0 || p >= 1) return;
+  const x = lerp(LN.xs[0] + LN.w / 2, LN.xs[k], p);
+  ctx.save(); ctx.globalAlpha *= a; glow(x, y, 40, color, .7);
+  rr(x - 26, y - 14, 52, 28, 8); ctx.fillStyle = color; ctx.fill(); ctx.restore();
+}
+// a small joint arm drawn above a box
+function jointArm(x, y, th, color, a = 1, L = 90) { arm(x, y, L, th, {color, lw: 12, mass: 12, alpha: a}); }
+// a timeline row: ticks at times ts (ms), mapped onto x0..x0+w for 0..span ms
+function tickRow(x0, y, w, span, ts, color, a = 1, o = {}) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.line; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + w, y); ctx.stroke();
+  ts.forEach((t, i) => { const k = o.prog == null ? 1 : clamp((o.prog - i * .12) * 2, 0, 1); if (k <= 0) return;
+    const x = x0 + t / span * w; ctx.globalAlpha = a * k; glow(x, y, 26, color, .5); ctx.fillStyle = color; rr(x - 4, y - 26, 8, 52, 4); ctx.fill(); });
+  ctx.restore();
+  if (o.label) text(o.label, x0 - 24, y, {size: 26, weight: 600, color, align: 'right', alpha: a});
+}
+function card(x, y, w, h, en, zh, color, a = 1, o = {}) {
+  if (a <= 0) return;
+  panel(x, y, w, h, {alpha: a, fill: C.panel, edge: rgba(color, .7), lw: 2.5});
+  text(en, x, y - (zh ? 18 : 0), {size: o.size || 34, weight: 600, color: o.tcolor || C.ink, alpha: a});
+  if (zh) text(zh, x, y + 26, {size: (o.size || 34) * .7, font: F.zh, color: C.dim, alpha: a});
+}
+function simTag(x, y, a) { chip('模拟 · simulated', x, y, C.violet, a, {size: 18}); }
+function realTag(x, y, a) { chip('真实运行 · real run', x, y, C.mint, a, {size: 18}); }
+
+/* ---------- 0. intro ---------- */
+SCN.intro = (lt, b, d) => {
+  const aArms = fade(lt, .2, b[2]);
+  const th = 30 * DEG * eio(ramp(lt, b[0] + 2.2, b[0] + 3.4));
+  const th2 = 30 * DEG * eio(ramp(lt, b[0] + 2.6, b[0] + 3.8)); // the second one a little later: the question
+  jointArm(700, 560, th, C.sky, aArms, 220); jointArm(1220, 560, th2, C.violet, aArms, 220);
+  text('J1', 700, 640, {size: 30, weight: 700, color: C.sky, alpha: aArms});
+  text('J2', 1220, 640, {size: 30, weight: 700, color: C.violet, alpha: aArms});
+  const p = ramp(lt, b[0] + .6, b[0] + 2.1);
+  packet({x: 960, y: 240}, {x: 760, y: 460}, p, C.gold, {bend: .2, label: '30°'});
+  packet({x: 960, y: 240}, {x: 1160, y: 460}, p, C.gold, {bend: -.2, label: '30°'});
+  if (lt < b[2]) text('?', 960, 470, {size: 120, font: F.disp, weight: 700, color: C.coral, alpha: fade(lt, b[1] + .3, b[2])});
+  const aT = fade(lt, b[2]);
+  text('EPISODE 01', 960, 330, {size: 24, font: F.mono, weight: 700, color: C.gold, ls: 10, alpha: aT});
+  text('The 1 ms problem', 960, 440 + 30 * (1 - aT), {size: 120, font: F.disp, weight: 700, alpha: aT, shadow: 'rgba(0,0,0,.6)'});
+  text('1 毫秒的问题：为什么同步就是精度', 960, 545, {size: 44, font: F.zh, weight: 500, color: C.ink, alpha: aT});
+  text('EtherCAT from Scratch · EtherCAT 从零读懂', 960, 615, {size: 28, color: C.dim, alpha: aT});
+  chip('why does timing matter?  时间为什么要紧？', 960, 720, C.coral, eback(ramp(lt, b[3] + .2, b[3] + .8)), {size: 24});
+};
+
+/* ---------- 1. line ---------- */
+SCN.line = (lt, b, d) => {
+  const sh = [ramp(lt, b[1] - .2, b[1] + .5), ramp(lt, b[1] + .4, b[1] + 1.1), ramp(lt, b[1] + .9, b[1] + 1.6), ramp(lt, b[1] + 1.4, b[1] + 2.1)];
+  sh[0] = Math.max(sh[0], ramp(lt, b[0] + .2, b[0] + .9) * 0 + ramp(lt, .3, 1));
+  lineDiagram({show: sh, mid: () => { if (lt > b[6]) frameOnLine(((lt - b[6]) % 1.6) / 1.6, 3, C.gold, fade(lt, b[6])); }});
+  // roles
+  const aR = fade(lt, b[2], b[4]);
+  text('sends commands', LN.xs[0], 600, {size: 26, color: C.gold, alpha: aR}); text('发命令', LN.xs[0], 636, {size: 22, font: F.zh, color: C.dim, alpha: aR});
+  brace(LN.xs[1] - 125, LN.xs[3] + 125, 575, '', C.dim, aR, 1);
+  text('obey and report', 1160, 640, {size: 26, color: C.ink, alpha: aR}); text('听命令、回数据', 1160, 676, {size: 22, font: F.zh, color: C.dim, alpha: aR});
+  // what each slave is: little icons on top
+  const aI = fade(lt, b[3]);
+  const th = 20 * DEG * Math.sin(2 * Math.PI * .5 * Math.max(0, lt - b[6]));
+  jointArm(LN.xs[2], 360, th, C.sky, aI); jointArm(LN.xs[3], 360, th, C.violet, aI);
+  ctx.save(); ctx.globalAlpha *= aI; ctx.strokeStyle = C.dim; ctx.lineWidth = 4; ctx.beginPath();
+  for (let i = 0; i <= 60; i++) { const x = LN.xs[1] - 70 + i * 140 / 60, y = 345 - 22 * Math.sin(i / 60 * Math.PI * 3); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke(); ctx.restore();
+  // real / simulated
+  const aS = fade(lt, b[4]);
+  chip('SOEM · real code 真实代码', LN.xs[0], 340, C.mint, eback(ramp(lt, b[4] + .3, b[4] + .9)), {size: 20});
+  chip('simulated chips 模拟芯片', 1160, 640, C.violet, eback(ramp(lt, b[4] + 1.2, b[4] + 1.8)) * (1 - ramp(lt, b[6] - .5, b[6])), {size: 20});
+  realTag(960, 760, eback(ramp(lt, b[5] + .2, b[5] + .8)) * (1 - ramp(lt, b[6] - .5, b[6])));
+  // every 1 ms a frame with targets
+  if (lt > b[6]) {
+    chip('every 1 ms · 每 1 毫秒', LN.xs[0], 650, C.gold, eback(ramp(lt, b[6] + .3, b[6] + .9)), {size: 22});
+  }
+  // the slow wave both follow
+  const aW = fade(lt, b[7]);
+  if (aW > 0) {
+    [[LN.xs[2], C.sky], [LN.xs[3], C.violet]].forEach(([x, c]) => {
+      const x0 = x - 130, y0 = 700, w = 260;
+      ctx.save(); ctx.globalAlpha *= aW * .5; ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = 0; i <= 80; i++) { const u = i / 80, yy = y0 - 40 * Math.sin(2 * Math.PI * u); i ? ctx.lineTo(x0 + u * w, yy) : ctx.moveTo(x0 + u * w, yy); }
+      ctx.stroke(); ctx.restore();
+      const u = ((lt - b[6]) * .5) % 1;
+      dot(x0 + u * w, y0 - 40 * Math.sin(2 * Math.PI * u), 10, c, aW);
+    });
+    text('same wave, same place  同一条曲线，同一个位置', 1360, 785, {size: 24, color: C.mint, alpha: aW});
+  }
+};
+
+/* ---------- 2. error = speed × time ---------- */
+SCN.error = (lt, b, d) => {
+  // left: a joint sweeping; its ghost (where it should be) leads it by the lateness
+  const aA = fade(lt, .3, b[2]);
+  const px = 560, py = 560, L = 300, w = 0.6;
+  const th = (t) => (20 + 60 * (.5 - .5 * Math.cos(w * t))) * DEG;
+  const lag = .45 * ramp(lt, b[1] + .5, b[1] + 1.5);
+  arm(px, py, L, th(lt), {ghost: true, color: C.gold, alpha: aA * ramp(lt, b[1], b[1] + .6), mass: 18});
+  arm(px, py, L, th(lt - lag), {color: C.sky, alpha: aA, mass: 18, lw: 16});
+  if (lag > .05) arcArrow(px, py, L + 50, th(lt - lag), th(lt), C.coral, {alpha: aA, lw: 5, head: 16});
+  text('should be here  应在的位置', 380, 250, {size: 24, color: C.gold, alpha: aA * ramp(lt, b[1] + .4, b[1] + 1)});
+  // the rule, built term by term
+  const r1 = ramp(lt, b[1] + .3, b[1] + .9), r2 = ramp(lt, b[1] + 1.1, b[1] + 1.7), r3 = ramp(lt, b[1] + 1.9, b[1] + 2.5);
+  const yE = lt < b[2] ? 470 : 250, xE = lt < b[2] ? 1300 : 960, sE = lt < b[2] ? 58 : 50;
+  eq([['error', C.coral, r1], [' = ', C.dim, r2], ['speed', C.ink, r2], [' × ', C.dim, r3], ['lateness', C.coral, r3]], xE, yE, sE, {glow: true});
+  text('误差 = 速度 × 晚了多久', xE, yE + 56, {size: 26, font: F.zh, color: C.dim, alpha: r3});
+  // machine tool
+  const aM = fade(lt, b[2], b[4]);
+  card(960, 420, 1100, 110, 'F1000 = 1000 mm/min ≈ 16.7 mm/s', '机床进给 F1000', C.ink, aM, {size: 36});
+  const m2 = ramp(lt, b[3], b[3] + .8);
+  wipe(m2, 400, 500, 1200, 120, () => eq([['16.7 mm/s', C.ink], [' × ', C.dim], ['0.001 s', C.coral], [' ≈ ', C.dim], ['0.017 mm', C.coral]], 960, 560, 52, {glow: true, alpha: aM}));
+  chip('≈ 17 µm', 960, 660, C.coral, eback(ramp(lt, b[3] + 1, b[3] + 1.6)) * aM, {size: 28});
+  // robot joint
+  const aJ = fade(lt, b[4], b[6]);
+  card(960, 400, 1000, 100, '180°/s × 0.001 s = 0.18°', '关节每秒 180°，晚 1 毫秒', C.sky, aJ, {size: 38, tcolor: C.sky});
+  const aK = fade(lt, b[5], b[6]);
+  if (aK > 0) {
+    // the arm tip: an arc of 0.18° shown magnified
+    const cx = 760, cy = 700, R = 380;
+    ctx.save(); ctx.globalAlpha *= aK; ctx.strokeStyle = C.sky; ctx.lineWidth = 10; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + R, cy - 60); ctx.stroke(); ctx.restore();
+    dot(cx, cy, 10, C.ink, aK);
+    text('0.5 m', cx + R / 2, cy + 6, {size: 26, font: F.mono, color: C.dim, alpha: aK});
+    eq([['0.18°', C.sky], [' → ', C.dim], ['≈ 1.6 mm', C.coral], [' at the tip', C.dim]], 1380, 600, 46, {alpha: aK});
+    text('手臂末端约 1.6 毫米', 1380, 660, {size: 26, font: F.zh, color: C.dim, alpha: aK});
+  }
+  const aF = fade(lt, b[6]);
+  card(960, 470, 1200, 150, 'timing error = position error', '时间误差就是位置误差', C.coral, aF, {size: 52});
+};
+
+/* ---------- 3. two kinds of timing error ---------- */
+SCN.two = (lt, b, d) => {
+  const x0 = 520, w = 1100, span = 4;
+  // skew: J1 on the beat, J2 always a bit after
+  const aS = fade(lt, b[1], b[4] + 3);
+  const beat = [0.5, 1.5, 2.5, 3.5];
+  const top = lt < b[2] ? 1 : 0;
+  const yS = 330;
+  text('skew  偏差', 260, yS - 80, {size: 34, weight: 700, color: C.gold, align: 'left', alpha: Math.max(aS, fade(lt, b[0] + .3, b[4] + 3))});
+  tickRow(x0, yS - 40, w, span, beat, C.sky, aS, {label: 'J1', prog: (lt - b[1]) * .8});
+  tickRow(x0, yS + 40, w, span, beat.map(t => t + .22), C.violet, aS, {label: 'J2', prog: (lt - b[1] - .3) * .8});
+  if (aS > 0) beat.forEach(t => { const xa = x0 + t / span * w, xb = x0 + (t + .22) / span * w;
+    ctx.save(); ctx.globalAlpha *= aS * ramp(lt, b[1] + 1.5, b[1] + 2); ctx.fillStyle = rgba(C.gold, .25); ctx.fillRect(xa, yS - 66, xb - xa, 132); ctx.restore(); });
+  // jitter: both together, but the beat itself wobbles
+  const aJ = fade(lt, b[2], b[4] + 3);
+  const jit = [0.5, 1.32, 2.61, 3.4];
+  const yJ = 600;
+  text('jitter  抖动', 260, yJ - 80, {size: 34, weight: 700, color: C.coral, align: 'left', alpha: Math.max(aJ, fade(lt, b[0] + .8, b[4] + 3))});
+  tickRow(x0, yJ - 40, w, span, jit, C.sky, aJ, {label: 'J1', prog: (lt - b[2]) * .8});
+  tickRow(x0, yJ + 40, w, span, jit, C.violet, aJ, {label: 'J2', prog: (lt - b[2] - .2) * .8});
+  if (aJ > 0) beat.forEach((t, i) => { const x = x0 + t / span * w;
+    ctx.save(); ctx.globalAlpha *= aJ * .6; ctx.setLineDash([6, 8]); ctx.strokeStyle = C.dim; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, yJ - 75); ctx.lineTo(x, yJ + 75); ctx.stroke(); ctx.restore(); });
+  text('dashed = where the beat should be  虚线 = 节拍应在的位置', 1070, yJ + 110, {size: 22, color: C.dim, alpha: aJ * ramp(lt, b[2] + 2, b[2] + 2.6)});
+  chip('joints disagree  关节之间对不上', 1350, yS - 80, C.gold, eback(ramp(lt, b[3], b[3] + .6)) * aS, {size: 22});
+  chip('the motion stumbles  动作磕磕绊绊', 1350, yJ - 80, C.coral, eback(ramp(lt, b[4], b[4] + .6)) * aJ, {size: 22});
+  // the band
+  const aB = fade(lt, b[5]);
+  if (aB > 0) {
+    const cbeat = [0, .85, 2.15, 2.9, 4.05, 4.8];
+    text('conductor 指挥', 330, 380, {size: 28, color: C.coral, align: 'left', alpha: aB});
+    tickRow(560, 380, 1100, 5.2, cbeat, C.coral, aB, {prog: (lt - b[5]) * 1.2});
+    ['band 乐队'].forEach(() => text('band 乐队', 330, 600, {size: 28, color: C.mint, align: 'left', alpha: aB}));
+    for (let r = 0; r < 3; r++) tickRow(560, 540 + r * 60, 1100, 5.2, cbeat, C.mint, aB * .9, {prog: (lt - b[5] - .4) * 1.2});
+    text('together with each other, all following a wobbling beat', 1110, 760, {size: 26, color: C.ink, alpha: aB * ramp(lt, b[5] + 2, b[5] + 2.6)});
+  }
+};
+
+/* ---------- 4. CANopen ---------- */
+SCN.canopen = (lt, b, d) => {
+  const busY = 560, mx = 300, dxs = [800, 1150, 1500];
+  const a = fade(lt, .2);
+  // a CAN bus: one shared line, every node hangs off it
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.faint; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(220, busY); ctx.lineTo(1700, busY); ctx.stroke(); ctx.restore();
+  text('CAN bus · one shared line  一条共享的总线', 960, busY + 40, {size: 22, color: C.dim, alpha: a});
+  box(mx, 380, 230, 120, 'Master', '主站', C.gold, a, {size: 28});
+  [[mx, 440]].concat(dxs.map(x => [x, 440])).forEach(([x]) => { ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.faint; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, 440); ctx.lineTo(x, busY); ctx.stroke(); ctx.restore(); });
+  const colors = [C.sky, C.violet, C.mint];
+  dxs.forEach((x, i) => box(x, 380, 220, 120, 'Drive ' + (i + 1), '驱动器 ' + (i + 1), colors[i], a, {size: 28}));
+  // beat 0: one at a time — each drive starts when its own message lands
+  const seq = lt < b[2];
+  if (seq) dxs.forEach((x, i) => {
+    const t0 = b[0] + 1 + i * 1.6;
+    packet({x: mx, y: busY}, {x, y: busY}, ramp(lt, t0, t0 + 1), C.gold, {bend: .15});
+    if (lt > t0 + 1) { pulse(x, 380, ramp(lt, t0 + 1, t0 + 1.8), colors[i]); text('moves', x, 260, {size: 24, color: colors[i], alpha: fade(lt, t0 + 1)}); }
+  });
+  if (lt > b[1] && lt < b[2]) {
+    chip('skew 偏差: drive 1 moves first', 960, 700, C.gold, eback(ramp(lt, b[1] + .5, b[1] + 1.1)), {size: 24});
+  }
+  // beat 2..3: targets first, then one SYNC (0x80) to all
+  if (lt >= b[2]) {
+    dxs.forEach((x, i) => { const t0 = b[2] + .4 + i * .5; packet({x: mx, y: busY}, {x, y: busY}, ramp(lt, t0, t0 + .9), C.gold, {bend: .12, label: 'target'}); });
+    const ts = b[2] + 3.5;
+    if (lt > ts) {
+      const k = ramp(lt, ts, ts + 1.2);
+      ctx.save(); ctx.globalAlpha *= (1 - k) * .9; ctx.strokeStyle = C.mint; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(mx, busY); ctx.lineTo(lerp(mx, 1600, eo(k)), busY); ctx.stroke(); ctx.restore();
+      chip('SYNC · ID 0x80', mx + 30, 690, C.mint, eback(ramp(lt, ts, ts + .6)) * (1 - ramp(lt, b[4] - .4, b[4])), {size: 24});
+      if (lt > ts + 1.1) dxs.forEach((x, i) => pulse(x, 380, ramp(lt, ts + 1.1, ts + 1.9), colors[i]));
+    }
+  }
+  if (lt > b[3] && lt < b[4]) chip('all at once: small skew  一起动：偏差很小', 1150, 700, C.mint, eback(ramp(lt, b[3] + .3, b[3] + .9)), {size: 24});
+  // beat 4: the timer that sends SYNC wobbles
+  const aT = fade(lt, b[4]);
+  if (aT > 0) {
+    const wob = Math.sin(lt * 7) * 8 * DEG;
+    ringArc(mx, 230, 34, ((lt * .7) % 1), C.coral, 6, aT);
+    ctx.save(); ctx.globalAlpha *= aT; ctx.strokeStyle = C.coral; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(mx, 230); ctx.lineTo(mx + 26 * Math.sin(wob + lt * 3), 230 - 26 * Math.cos(wob + lt * 3)); ctx.stroke(); ctx.restore();
+    text('software timer  软件定时器', mx + 60, 230, {size: 24, color: C.coral, align: 'left', alpha: aT});
+  }
+  // beat 5: bus busy — SYNC waits behind a frame in progress
+  const aB = fade(lt, b[5], b[7]);
+  if (aB > 0) {
+    const k = ramp(lt, b[5] + .5, b[5] + 3.5);
+    ctx.save(); ctx.globalAlpha *= aB; rr(560, busY - 18, 900 * Math.min(1, k * 1.2), 36, 8); ctx.fillStyle = rgba(C.dim, .5); ctx.fill(); ctx.restore();
+    text('a frame in progress: 8 bytes ≈ 0.1 ms at 1 Mbit/s', 1010, busY - 50, {size: 24, color: C.ink, alpha: aB});
+    chip('SYNC waits 等待', mx + 130, busY - 50, C.coral, eback(ramp(lt, b[5] + 1, b[5] + 1.6)) * aB, {size: 22});
+  }
+  // beat 6: each drive adds an interrupt delay
+  const aI = fade(lt, b[6], b[7] + 1);
+  dxs.forEach((x, i) => { if (aI > 0) chip('+ interrupt 中断', x, 270, C.coral, eback(ramp(lt, b[6] + .3 + i * .3, b[6] + .9 + i * .3)) * aI, {size: 20}); });
+  text('each drive adds its own delay  每个驱动器各添一段延迟', 1150, 210, {size: 22, color: C.dim, alpha: aI});
+  // beat 7: verdict
+  const aV = fade(lt, b[7]);
+  card(700, 760, 520, 80, 'skew: fixed ✓  偏差：治了', '', C.mint, aV, {size: 30, tcolor: C.mint});
+  card(1250, 760, 560, 80, 'jitter: not fixed ✗  抖动：没治', '', C.coral, aV, {size: 30, tcolor: C.coral});
+};
+
+/* ---------- 5. guess ---------- */
+SCN.guess = (lt, b, d) => {
+  const a = fade(lt, .2);
+  const k = lt > b[0] + .5 ? (lt - b[0] - .5) % 1.4 / 1.4 : -1;
+  lineDiagram({alpha: a, y: 400, mid: () => frameOnLine(k, 3, C.gold, a, 400)});
+  // frames leave every 1.4 s of animation; the joints light on arrival
+  if (k >= 0) {
+    [1, 2, 3].forEach(i => { const ki = (LN.xs[i] - LN.xs[0] - LN.w / 2) / (LN.xs[3] - LN.xs[0] - LN.w / 2); if (i > 1) pulse(LN.xs[i], 400, (k - ki + 1) % 1 * 4, LCOL[i]); });
+  }
+  chip('act on arrival  到达即动作', 1360, 280, C.gold, eback(ramp(lt, b[0] + 1, b[0] + 1.6)), {size: 22});
+  chip('target: every 1.000 ms  目标：每 1.000 毫秒', LN.xs[0], 540, C.gold, eback(ramp(lt, b[1] + .3, b[1] + .9)), {size: 22});
+  const aQ = fade(lt, b[2]);
+  card(960, 700, 1100, 130, 'How far from 1 ms will real cycles land?', '实际周期会偏离 1 毫秒多少？', C.coral, aQ, {size: 40});
+};
+
+/* ---------- 6. the real run ---------- */
+SCN.run = (lt, b, d) => {
+  const H0 = D.frame.hist, maxH = Math.max(...H0);
+  const gx = 360, gy = 720, gw = 1200, gh = 380, n = H0.length;
+  const aH = fade(lt, .2, b[5]);
+  // a strip of the first 40 real cycles: where each act landed vs the 1 ms grid
+  const aS = fade(lt, .3, b[2]);
+  if (aS > 0) {
+    let t = 0; const ts = D.frame.strip.slice(0, 16).map(p => (t += p / 1000));
+    const span = 16.5;
+    for (let i = 1; i <= 16; i++) { const x = gx + i / span * gw; ctx.save(); ctx.globalAlpha *= aS * .5; ctx.setLineDash([5, 7]); ctx.strokeStyle = C.dim; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, 200); ctx.lineTo(x, 280); ctx.stroke(); ctx.restore(); }
+    tickRow(gx, 240, gw, span, ts, C.sky, aS, {label: 'J1', prog: (lt - .3) * 1.5});
+    text('first 16 real cycles · dashed = exact 1 ms grid   前 16 个真实周期 · 虚线 = 准确的 1 毫秒', 960, 312, {size: 20, color: C.dim, alpha: aS});
+  }
+  // histogram of every measured period
+  const grow = eo(ramp(lt, b[0] + .3, b[0] + 2));
+  if (aH > 0) {
+    axes(gx, gy, gw + 20, gh - 20, {alpha: aH});
+    for (let i = 0; i < n; i++) {
+      const v = H0[i] / maxH, h = Math.max(v > 0 ? 3 : 0, Math.sqrt(v) * (gh - 60)) * grow, x = gx + 10 + i * gw / n;
+      const lo = D.frame.lo + i * D.frame.w, tail = lo < 900 || lo >= 1100;
+      const c = tail && lt > b[1] ? C.coral : C.sky;
+      ctx.save(); ctx.globalAlpha *= aH; ctx.fillStyle = rgba(c, .85); ctx.fillRect(x, gy - h, gw / n - 4, h); ctx.restore();
+    }
+    [400, 600, 800, 1000, 1200, 1400].forEach(us => text(us + ' µs', gx + 10 + (us - D.frame.lo) / D.frame.w * gw / n, gy + 32, {size: 20, font: F.mono, color: C.dim, alpha: aH}));
+    text('cycle length · 周期长度', gx + gw / 2, gy + 70, {size: 22, color: C.dim, alpha: aH});
+    text('count (√ scale) 次数', gx + 20, gy - gh + 10, {size: 20, color: C.dim, align: 'left', alpha: aH});
+    realTag(1560, 380, aH);
+    if (D.frame.out) text(`+ ${D.frame.out} cycles off the chart  另有 ${D.frame.out} 个周期超出图表范围`, 1560, 490, {size: 20, color: C.coral, alpha: aH * ramp(lt, b[1], b[1] + .6)});
+    text(`${D.frame.n} cycles · shortest ${D.frame.min_us} µs · longest ${D.frame.max_us} µs`, 1560, 420, {size: 20, font: F.mono, color: C.dim, align: 'center', alpha: aH * ramp(lt, b[1], b[1] + .6)});
+    // spread
+    const aSD = fade(lt, b[2]);
+    const c0 = gx + 10 + (1000 - D.frame.lo) / D.frame.w * gw / n, sdw = D.frame.sd_us / D.frame.w * gw / n;
+    brace(c0 - sdw, c0 + sdw, gy - gh + 40, `σ = ${D.frame.sd_us} µs (this run)`, C.coral, aSD, -1);
+    text(`runs: σ = ${D.frame.sd_all_us.join(' / ')} µs`, 1560, 455, {size: 20, font: F.mono, color: C.coral, alpha: aSD});
+    chip('master = ordinary Mac  主站是一台普通 Mac', 1450, 545, C.gold, eback(ramp(lt, b[3] + .2, b[3] + .8)) * aH, {size: 20});
+    chip('real-time OS: smaller, never 0  实时系统：更小，但不为零', 1450, 600, C.mint, eback(ramp(lt, b[4] + .2, b[4] + .8)) * aH, {size: 20});
+  }
+  // J1 vs J2: one frame passes J1, then J2
+  const aJ = fade(lt, b[5], b[8]);
+  if (aJ > 0) {
+    const k = ((lt - b[5]) % 2.2) / 2.2;
+    lineDiagram({alpha: aJ, y: 330, mid: () => frameOnLine(k, 3, C.gold, aJ, 330)});
+        ctx.save(); ctx.globalAlpha *= aJ; ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(460, 600); ctx.lineTo(1460, 600); ctx.stroke(); ctx.restore();
+    tickRow(460, 560, 1000, 1250, [100], C.sky, aJ, {label: 'J1'});
+    tickRow(460, 640, 1000, 1250, [100 + D.frame.skew_ns], C.violet, aJ, {label: 'J2'});
+    brace(460 + 100 / 1250 * 1000, 460 + (100 + D.frame.skew_ns) / 1250 * 1000, 700, `${D.frame.skew_ns} ns, every cycle  每个周期都一样`, C.gold, aJ * ramp(lt, b[5] + .8, b[5] + 1.4), 1);
+    simTag(1560, 600, aJ * ramp(lt, b[6], b[6] + .6));
+    text('= simulated cable 5 ns + chip 305 ns (ET1100 datasheet)  模拟：网线 + 芯片延迟（取自 ET1100 数据手册）', 960, 815, {size: 20, color: C.violet, alpha: aJ * ramp(lt, b[6], b[6] + .6)});
+    chip('→ Episode 3  第 3 集', 1560, 680, C.mint, eback(ramp(lt, b[7] + .2, b[7] + .8)) * aJ, {size: 20});
+  }
+  // jitter goes to the motors
+  const aM = fade(lt, b[8]);
+  if (aM > 0) {
+    const px = 620, py = 640, L = 360, th = 40 * DEG, lag = 6 * DEG * ramp(lt, b[8] + .8, b[8] + 1.8);
+    arm(px, py, L, th, {ghost: true, color: C.gold, alpha: aM, mass: 16});
+    arm(px, py, L, th - lag, {color: C.sky, alpha: aM, mass: 16, lw: 14});
+    arcArrow(px, py, L + 40, th - lag, th, C.coral, {alpha: aM * ramp(lt, b[8] + 1, b[8] + 1.6), lw: 5});
+    text('angle exaggerated  角度放大示意', px + 160, py + 50, {size: 20, color: C.dim, alpha: aM});
+    const aC = ramp(lt, b[9] + .2, b[9] + 1);
+    eq([['180°/s', C.sky], [' × ', C.dim], ['0.2 ms', C.coral], [' = ', C.dim], ['0.036°', C.coral]], 1340, 420, 50, {alpha: aC, glow: true});
+    eq([['0.036°', C.coral], [' at 0.5 m ', C.dim], ['≈ 0.3 mm', C.coral]], 1340, 520, 44, {alpha: ramp(lt, b[9] + 1.5, b[9] + 2.3)});
+    text('手臂末端约 0.3 毫米', 1340, 580, {size: 26, font: F.zh, color: C.dim, alpha: ramp(lt, b[9] + 1.5, b[9] + 2.3)});
+  }
+};
+
+/* ---------- 7. what EtherCAT does instead ---------- */
+function clockFace(x, y, r, t, color, a) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.panel; ctx.strokeStyle = color; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  const an = t * Math.PI * 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + r * .75 * Math.sin(an), y - r * .75 * Math.cos(an)); ctx.stroke();
+  ctx.restore();
+}
+SCN.dc = (lt, b, d) => {
+  const aL = fade(lt, .2, b[6]);
+  const kF = lt > b[4] ? ((lt - b[4]) * .7) % 1 : -1, jF = .12 * Math.sin(Math.floor((lt - b[4]) * .7) * 2.3);
+  lineDiagram({alpha: aL, y: 400, mid: () => { if (kF >= 0) frameOnLine(clamp(kF * 1.6 + jF, 0, .999), 3, C.coral, aL, 400); }});
+  // clocks on every slave, all at the same phase
+  const ph = ((lt - b[1]) * .7) % 1;
+  [1, 2, 3].forEach(i => clockFace(LN.xs[i], 250, 34, ph, C.mint, aL * ramp(lt, b[1] + .2 + i * .25, b[1] + .8 + i * .25)));
+  chip('Distributed Clock · DC  分布式时钟', 1160, 160 + 20, C.mint, eback(ramp(lt, b[2] + .2, b[2] + .8)) * aL, {size: 22});
+  // SYNC0: every slave pulses together on the clock's tick
+  if (lt > b[3] && lt < b[6]) {
+    const k = ((lt - b[3]) * .7) % 1;
+    [2, 3].forEach(i => pulse(LN.xs[i], 400, k * 2.2, C.mint));
+    if (k < .12) text('SYNC0', 1360, 560, {size: 34, font: F.mono, weight: 700, color: C.mint, alpha: aL});
+  }
+  // frames from the wobbling master arrive at uneven times — but before SYNC0
+  if (lt > b[4]) {
+    chip('frame: any time before SYNC0  帧只要在 SYNC0 之前到', 960, 600, C.coral, eback(ramp(lt, b[4] + .3, b[4] + .9)) * aL, {size: 22});
+  }
+  chip('master still wobbles  主站照样在晃', LN.xs[0], 560, C.gold, eback(ramp(lt, b[5] + .2, b[5] + .8)) * aL, {size: 20});
+  // the comparison: period spread, log scale
+  const aC = fade(lt, b[6]);
+  if (aC > 0) {
+    realTag(1640, 250, aC);
+    const x0 = 460, y1 = 340, y2 = 480, maxW = 1100, lg = v => Math.log10(v) / Math.log10(100000) * maxW; // 1 ns .. 100 µs
+    const fsd = D.frame.sd_us * 1000, dsd = D.dc.sd_ns;
+    const g1 = eo(ramp(lt, b[6] + .2, b[6] + 1.4)), g2 = eo(ramp(lt, b[6] + 1, b[6] + 2.2));
+    text('act on frame', x0 - 30, y1 - 16, {size: 26, weight: 600, color: C.coral, align: 'right', alpha: aC});
+    text('到达即动作', x0 - 30, y1 + 18, {size: 20, font: F.zh, color: C.dim, align: 'right', alpha: aC});
+    text('SYNC0 (DC)', x0 - 30, y2 - 16, {size: 26, weight: 600, color: C.mint, align: 'right', alpha: aC});
+    text('分布式时钟', x0 - 30, y2 + 18, {size: 20, font: F.zh, color: C.dim, align: 'right', alpha: aC});
+    ctx.save(); ctx.globalAlpha *= aC;
+    rr(x0, y1 - 30, lg(fsd) * g1, 60, 10); ctx.fillStyle = rgba(C.coral, .8); ctx.fill();
+    rr(x0, y2 - 30, Math.max(8, lg(dsd)) * g2, 60, 10); ctx.fillStyle = rgba(C.mint, .9); ctx.fill();
+    ctx.restore();
+    text(`σ = ${D.frame.sd_us} µs`, x0 + lg(fsd) * g1 + 20, y1, {size: 30, font: F.mono, weight: 700, color: C.coral, align: 'left', alpha: aC * g1});
+    text(`σ = ${D.dc.sd_ns} ns`, x0 + Math.max(8, lg(dsd)) * g2 + 20, y2, {size: 30, font: F.mono, weight: 700, color: C.mint, align: 'left', alpha: aC * g2});
+    ['1 ns', '10 ns', '100 ns', '1 µs', '10 µs', '100 µs'].forEach((s, i) => { const x = x0 + i / 5 * maxW;
+      ctx.save(); ctx.globalAlpha *= aC * .5; ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y1 - 60); ctx.lineTo(x, y2 + 50); ctx.stroke(); ctx.restore();
+      text(s, x, y2 + 80, {size: 20, font: F.mono, color: C.dim, alpha: aC}); });
+    text('period spread, log scale  周期离散（对数刻度）', x0 + maxW / 2, y2 + 118, {size: 22, color: C.dim, alpha: aC});
+    chip(`J1 ↔ J2 once settled: ≤ ${D.dc.settled_skew_ns} ns  稳定后相差`, 700, 700, C.mint, eback(ramp(lt, b[7] + .2, b[7] + .8)) * aC, {size: 22});
+    chip('≈ 10,000× tighter  收紧约一万倍', 1300, 700, C.gold, eback(ramp(lt, b[8] + .2, b[8] + .8)) * aC, {size: 26});
+    simTag(1300, 770, aC * ramp(lt, b[9], b[9] + .6));
+    text('settling speed: our chip model  稳定速度来自模拟芯片模型', 1300, 812, {size: 20, color: C.violet, alpha: aC * ramp(lt, b[9], b[9] + .6)});
+  }
+};
+
+/* ---------- 8. roadmap ---------- */
+SCN.road = (lt, b, d) => {
+  const items = [
+    ['One cable is already a ring', '一根网线就是一个环', 'Episode 2', C.sky],
+    ['One frame, never stopped', '一帧走到底，边走边处理', 'Episode 3', C.gold],
+    ['Startup: who sends what', '启动：谁收发哪些数据', 'Episode 4', C.violet],
+    ['Clocks agree to nanoseconds', '时钟对齐到纳秒', 'Episode 5', C.mint],
+  ];
+  text('four questions  四个问题', 960, 220, {size: 34, weight: 600, color: C.dim, alpha: fade(lt, .3)});
+  items.forEach(([en, zh, ep, c], i) => {
+    const a = eback(ramp(lt, b[i + 1], b[i + 1] + .6)), y = 330 + i * 120;
+    if (a <= 0) return;
+    ctx.save(); ctx.translate(0, (1 - a) * 30);
+    panel(960, y, 1100, 96, {alpha: Math.min(1, a), edge: rgba(c, .7), lw: 2.5});
+    text(ep, 520, y, {size: 26, font: F.mono, weight: 700, color: c, align: 'left', alpha: Math.min(1, a)});
+    text(en, 760, y - 14, {size: 32, weight: 600, align: 'left', alpha: Math.min(1, a)});
+    text(zh, 760, y + 22, {size: 22, font: F.zh, color: C.dim, align: 'left', alpha: Math.min(1, a)});
+    ctx.restore();
+  });
+};
+
+/* ---------- 9. recap ---------- */
+SCN.recap = (lt, b, d) => {
+  const items = [
+    ['timing error = position error', '时间误差就是位置误差：速度 × 时间', C.coral],
+    ['skew ≠ jitter', '偏差在关节之间，抖动是节拍本身', C.gold],
+    ['act on arrival → inherit jitter; a shared clock removes it', '收到就动作会继承抖动；共享时钟才能去掉它', C.mint],
+  ];
+  items.forEach(([en, zh, c], i) => {
+    const a = eo(ramp(lt, b[i] + .2, b[i] + .8)), y = 330 + i * 150;
+    if (a <= 0) return;
+    panel(960, y, 1300, 120, {alpha: a, edge: rgba(c, .6)});
+    text(String(i + 1).padStart(2, '0'), 380, y, {size: 30, font: F.mono, weight: 700, color: c, alpha: a});
+    text(en, 450, y - 18, {size: 34, weight: 600, align: 'left', alpha: a});
+    text(zh, 450, y + 24, {size: 24, font: F.zh, color: C.dim, align: 'left', alpha: a});
+  });
+};
+
+/* ---------- 10. your turn ---------- */
+SCN.turn = (lt, b, d) => {
+  text('YOUR TURN  你来算', 960, 220, {size: 26, font: F.mono, weight: 700, color: C.gold, ls: 6, alpha: fade(lt, .2)});
+  const a1 = fade(lt, b[0] + .2, b[3]);
+  eq([['90°/s', C.sky], [' × ', C.dim], ['0.3 ms', C.coral], [' = ', C.dim], ['?', C.gold, 1 - ramp(lt, b[2], b[2] + .4)]], 960, 420, 72, {alpha: a1, glow: true});
+  const a2 = ramp(lt, b[2], b[2] + .8) * (1 - ramp(lt, b[3] - .5, b[3]));
+  eq([['90°/s', C.sky], [' × ', C.dim], ['0.0003 s', C.coral], [' = ', C.dim], ['0.027°', C.gold]], 960, 560, 60, {alpha: a2, glow: true});
+  const a3 = fade(lt, b[3]);
+  if (a3 > 0) {
+    text('Next · 下一集', 960, 330, {size: 26, font: F.mono, weight: 700, color: C.dim, alpha: a3});
+    text('One cable is already a ring', 960, 430, {size: 64, font: F.disp, weight: 700, alpha: a3});
+    text('一根网线就是一个环', 960, 510, {size: 34, font: F.zh, color: C.dim, alpha: a3});
+    // a cable that is secretly two lanes
+    ctx.save(); ctx.globalAlpha *= a3; ctx.lineCap = 'round';
+    ctx.strokeStyle = C.gold; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(560, 620); ctx.lineTo(1360, 620); ctx.stroke();
+    ctx.strokeStyle = C.sky; ctx.beginPath(); ctx.moveTo(560, 650); ctx.lineTo(1360, 650); ctx.stroke(); ctx.restore();
+    arrow({x: 900, y: 620}, {x: 1000, y: 620}, C.gold, {alpha: a3}); arrow({x: 1000, y: 650}, {x: 900, y: 650}, C.sky, {alpha: a3});
+  }
+};
+
+// filled by build.py with every Chinese character in this file (so the font subset loads them)
+const EXTRA_ZH = '、一万上下不个中为主久么之乐了些享什从代令件会但位作你倍偏共关册准出分到刻前动卡即去发取另只台各同后听启周命哪器四回围图在型处多大它定实对小少就差布帧床应底度延式待很总意懂手才承抖拍拟指挥据掉收放散数断时是晃晚普曲更有期末本机条来标样根模次步段每毫没治添照片环理的目相真码确磕示离秒稳站端第等算米精系紧约纳线绊给统继网置能臂自节芯范虚行表要角误读谁走起超身软边达运进迟通速都采钟长问间队际集零题驱齐（），：；？';
+/* =========================================================
+   Chrome: chapter title, progress, subtitles
+   ========================================================= */
+var NOSUBS = location.search.includes('nosubs');
+function chrome(t, si, s, lt){
+  const n = TL.scenes.length;
+  if (si > 0 && si < n-1){
+    const a = eo(ramp(lt, .2, .8)) * (1 - ramp(lt, s.dur - .5, s.dur - .1));
+    text(String(si).padStart(2,'0'), 80, 88, {size:26, font:F.mono, weight:700, color:C.gold, align:'left', alpha:a});
+    text(s.title, 130, 88, {size:40, font:F.disp, weight:700, align:'left', alpha:a});
+    text(s.zh, 132, 132, {size:22, font:F.zh, weight:500, color:C.dim, align:'left', alpha:a});
+  }
+  // progress ticks
+  const bw = 34, gap = 8, x0 = W - 80 - n*bw - (n-1)*gap;
+  for (let i=0;i<n;i++){ const x = x0 + i*(bw+gap); rr(x, 84, bw, 5, 2.5); ctx.fillStyle = rgba(C.faint,.9); ctx.fill();
+    const f = i < si ? 1 : i > si ? 0 : clamp(lt/s.dur,0,1); if (f > 0){ rr(x, 84, bw*f, 5, 2.5); ctx.fillStyle = C.gold; ctx.fill(); } }
+  // subtitles (off with ?nosubs: slides.mjs puts the narration beside each slide instead)
+  const bt = !NOSUBS && s.beats.find(bb => lt >= bb.start - .05 && lt < bb.start + bb.dur + .35);
+  if (bt){
+    const a = ramp(lt, bt.start - .05, bt.start + .12) * (1 - ramp(lt, bt.start + bt.dur + .2, bt.start + bt.dur + .35));
+    const g = ctx.createLinearGradient(0, 840, 0, H); g.addColorStop(0,'rgba(7,11,22,0)'); g.addColorStop(1,'rgba(7,11,22,.85)'); ctx.fillStyle = g; ctx.fillRect(0, 840, W, H-840);
+    ctx.font = `500 38px ${F.sans}`; const lines = wrapLines(bt.text, 1500);
+    const zy = 1030, ly = zy - 52 - (lines.length-1)*50;
+    lines.forEach((l,i) => text(l, 960, ly + i*50, {size:38, weight:500, alpha:a, shadow:'rgba(0,0,0,.8)'}));
+    text(bt.zh, 960, zy, {size:27, font:F.zh, weight:500, color:'#B9C1D3', alpha:a});
+  }
+}
+
+/* =========================================================
+   render(t)
+   ========================================================= */
+var render = function(t){
+  ctx.setTransform(1,0,0,1,0,0);
+  background(t);
+  const sc = TL.scenes; let si = sc.findIndex(s => t >= s.start && t < s.start + s.dur); if (si < 0) si = t < 0 ? 0 : sc.length-1;
+  const s = sc[si], lt = t - s.start, b = s.beats.map(x => x.start);
+  const a = Math.min(ramp(lt, 0, .5), 1 - ramp(lt, s.dur - .45, s.dur));
+  ctx.save(); ctx.globalAlpha = a;
+  const z = 1 + .025*(1 - eo(ramp(lt, 0, 1.6))); ctx.translate(960,540); ctx.scale(z,z); ctx.translate(-960,-540);
+  SCN[s.id](lt, b, s.dur);
+  ctx.restore();
+  chrome(t, si, s, lt);
+  if (si === sc.length-1){ const k = ramp(lt, s.dur - 1.2, s.dur); if (k > 0){ ctx.fillStyle = `rgba(0,0,0,${k})`; ctx.fillRect(0,0,W,H); } }
+};
+
+
+var ready = (async () => {
+  const zh = TL.scenes.map(s => s.zh + s.beats.map(b => b.zh).join('')).join('');
+  try { await Promise.all([
+    document.fonts.load(`700 150px ${F.disp}`), document.fonts.load(`600 40px ${F.disp}`),
+    document.fonts.load(`500 38px ${F.sans}`), document.fonts.load(`600 38px ${F.sans}`),
+    document.fonts.load(`700 24px ${F.mono}`), document.fonts.load(`500 24px ${F.mono}`),
+    document.fonts.load(`500 27px ${F.zh}`, zh + EXTRA_ZH)]); await document.fonts.ready; } catch(e){}
+  return true;
+})();
+
+/* ---------- player ---------- */
+if (location.search.includes('record')){ document.body.classList.add('record'); ready.then(() => render(0)); }
+else {
+  const au = document.getElementById('au'), pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tm = document.getElementById('tm');
+  let playing = false, t0 = 0, base = 0, useAudio = true;
+  const now = () => playing ? (useAudio && !au.paused ? au.currentTime : base + (performance.now() - t0)/1000) : base;
+  const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  pp.onclick = () => {
+    if (playing){ base = now(); playing = false; au.pause(); pp.textContent = 'Play'; }
+    else { if (base >= TL.total) base = 0; playing = true; t0 = performance.now(); au.currentTime = base; au.play().catch(() => { useAudio = false; }); pp.textContent = 'Pause'; }
+  };
+  sc.oninput = () => { base = sc.value/1000*TL.total; t0 = performance.now(); au.currentTime = base; };
+  const loop = () => { let t = now(); if (t >= TL.total){ t = TL.total - .001; if (playing){ playing = false; base = TL.total; pp.textContent = 'Replay'; } } render(t); sc.value = Math.round(t/TL.total*1000); tm.textContent = `${fmt(t)} / ${fmt(TL.total)}`; requestAnimationFrame(loop); };
+  ready.then(() => { render(0); loop(); });
+}
+</script>
+</body>
+</html>
